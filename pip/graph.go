@@ -26,6 +26,10 @@ func (g Graph) CreateNode(name string, kind Kind, properties map[string]string) 
 		return fmt.Errorf("name %q is already exists", name)
 	}
 
+	if properties == nil {
+		properties = make(map[string]string)
+	}
+
 	g.Nodes[name] = Node{
 		Name:       name,
 		Kind:       kind,
