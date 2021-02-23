@@ -54,7 +54,7 @@ func (d decider) userDAG(user pip.Node) userContext {
 	}
 
 	visitor := func(node pip.Node) {
-		assocs := d.graph.GetAssociations(node.Name)
+		assocs := d.graph.GetAssociationsForSubject(node.Name)
 		d.collectAssociations(assocs, userCtx.borderTargets)
 	}
 

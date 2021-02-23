@@ -1,7 +1,6 @@
 package pip
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
@@ -45,7 +44,28 @@ func (g Graph) DeleteNode(name string) {
 
 func (g Graph) GetNode(name string) (Node, bool) {
 	node, ok := g.Nodes[name]
-	return node, ok
+	return copyNode(node), ok
+}
+
+func copyNode(node Node) Node {
+	props := make(map[string]string)
+	for k, v := range node.Properties {
+		props[k] = v
+	}
+	return Node{
+		Name:       node.Name,
+		Kind:       node.Kind,
+		Properties: props,
+	}
+}
+
+func (g Graph) GetNodes() map[string]Node {
+	nodes := make(map[string]Node)
+	for _, node := range g.Nodes {
+		copyNode := copyNode(node)
+		nodes[copyNode.Name] = copyNode
+	}
+	return nodes
 }
 
 func (g Graph) Find(kind Kind, properties map[string]string) map[string]Node {
@@ -102,6 +122,24 @@ func (g Graph) GetParents(name string) map[string]Node {
 	return parents
 }
 
+func (g Graph) GetAssignments() map[string]map[string]bool {
+	assignments := make(map[string]map[string]bool)
+	for child, parents := range g.Assignments {
+		retParents := make(map[string]bool)
+		for parent, ok := range parents {
+			if !ok {
+				continue
+			}
+
+			retParents[parent] = ok
+		}
+
+		assignments[child] = retParents
+	}
+
+	return assignments
+}
+
 func (g Graph) Associate(source string, target string, operations Operations) {
 	if _, ok := g.Associations[source]; !ok {
 		g.Associations[source] = make(map[string]Operations)
@@ -113,19 +151,28 @@ func (g Graph) Dissociate(source string, target string) {
 	delete(g.Associations[source], target)
 }
 
-func (g Graph) GetAssociations(name string) map[string]Operations {
+func (g Graph) GetAssociationsForSubject(name string) map[string]Operations {
 	return g.Associations[name]
 }
 
-func ToJson(graph Graph) string {
-	b, _ := json.Marshal(graph)
-	return string(b)
+func (g Graph) GetAssociations() map[string]map[string]Operations {
+	assocs := make(map[string]map[string]Operations)
+	for subject, subjectAssocs := range g.Associations {
+		retAssocs := make(map[string]Operations)
+		for target, ops := range subjectAssocs {
+			retAssocs[target] = copyOps(ops)
+		}
+
+		assocs[subject] = retAssocs
+	}
+
+	return assocs
 }
 
-func FromJson(s string) Graph {
-	g := NewGraph()
-	if err := json.Unmarshal([]byte(s), &g); err != nil {
-
+func copyOps(operations Operations) Operations {
+	retOps := ToOps()
+	for op := range operations {
+		retOps[op] = true
 	}
-	return g
+	return retOps
 }
