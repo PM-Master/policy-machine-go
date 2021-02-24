@@ -14,7 +14,7 @@ type (
 	}
 
 	Searcher interface {
-		Traverse(start pip.Node, propagate func(node pip.Node, target pip.Node), visit func(node pip.Node))
+		Traverse(start pip.Node, propagate func(node pip.Node, target pip.Node) error, visit func(node pip.Node) error) error
 	}
 
 	bfs struct {
@@ -35,7 +35,7 @@ func NewDFS(graph pip.Graph) Searcher {
 	return dfs{graph: graph, visited: make(map[string]bool)}
 }
 
-func (b bfs) Traverse(start pip.Node, propagate func(parent pip.Node, child pip.Node), visit func(node pip.Node)) {
+func (b bfs) Traverse(start pip.Node, propagate func(parent pip.Node, child pip.Node) error, visit func(node pip.Node) error) error {
 	queue := make([]pip.Node, 0)
 	seen := make(map[string]bool)
 	queue = append(queue, start)
@@ -45,9 +45,19 @@ func (b bfs) Traverse(start pip.Node, propagate func(parent pip.Node, child pip.
 		node := queue[0]
 		queue = queue[1:]
 
-		visit(node)
+		var (
+			err     error
+			parents map[string]pip.Node
+		)
 
-		parents := b.graph.GetParents(node.Name)
+		if err = visit(node); err != nil {
+			return err
+		}
+
+		if parents, err = b.graph.GetParents(node.Name); err != nil {
+			return err
+		}
+
 		for _, parentNode := range parents {
 			if seen[parentNode.Name] {
 				continue
@@ -56,23 +66,40 @@ func (b bfs) Traverse(start pip.Node, propagate func(parent pip.Node, child pip.
 			queue = append(queue, parentNode)
 			seen[parentNode.Name] = true
 
-			propagate(parentNode, node)
+			if err = propagate(parentNode, node); err != nil {
+				return err
+			}
 		}
 	}
+
+	return nil
 }
 
-func (d dfs) Traverse(start pip.Node, propagate func(node pip.Node, target pip.Node), visit func(node pip.Node)) {
+func (d dfs) Traverse(start pip.Node, propagate func(node pip.Node, target pip.Node) error, visit func(node pip.Node) error) error {
 	if d.visited[start.Name] {
-		return
+		return nil
 	}
 
 	d.visited[start.Name] = true
 
-	parents := d.graph.GetParents(start.Name)
-	for _, parentNode := range parents {
-		d.Traverse(parentNode, propagate, visit)
-		propagate(parentNode, start)
+	parents, err := d.graph.GetParents(start.Name)
+	if err != nil {
+		return err
 	}
 
-	visit(start)
+	for _, parentNode := range parents {
+		if err := d.Traverse(parentNode, propagate, visit); err != nil {
+			return err
+		}
+
+		if err := propagate(parentNode, start); err != nil {
+			return err
+		}
+	}
+
+	if err := visit(start); err != nil {
+		return nil
+	}
+
+	return nil
 }

@@ -1,13 +1,14 @@
 package pdp
 
 import (
+	"fmt"
 	"github.com/PM-Master/policy-machine-go/dag"
 	"github.com/PM-Master/policy-machine-go/pip"
 )
 
 type (
 	Decider interface {
-		Decide(user string, target string, permissions ...string) bool
+		Decide(user string, target string, permissions ...string) (bool, error)
 	}
 
 	decider struct {
@@ -27,42 +28,61 @@ func NewDecider(graph pip.Graph) Decider {
 	return decider{graph: graph}
 }
 
-func (d decider) Decide(user string, target string, permissions ...string) bool {
+func (d decider) Decide(user string, target string, permissions ...string) (bool, error) {
+	var (
+		userCtx   userContext
+		targetCtx targetContext
+		err       error
+	)
+
 	// process user dag
 	userNode, _ := d.graph.GetNode(user)
-	userCtx := d.userDAG(userNode)
+	if userCtx, err = d.userDAG(userNode); err != nil {
+		return false, fmt.Errorf("error processing user side of graph for %q: %v", user, err)
+	}
 
 	// process target dag
 	targetNode, _ := d.graph.GetNode(target)
-	targetCtx := d.targetDAG(targetNode, userCtx)
+	if targetCtx, err = d.targetDAG(targetNode, userCtx); err != nil {
+		return false, fmt.Errorf("error processing target side of graph for %q: %v", target, err)
+	}
 
 	// resolve permissions
 	allowed := d.allowedPermissions(targetCtx)
 	for _, permission := range permissions {
 		if !allowed[permission] {
-			return false
+			return false, nil
 		}
 	}
 
-	return true
+	return true, nil
 }
 
-func (d decider) userDAG(user pip.Node) userContext {
+func (d decider) userDAG(user pip.Node) (userContext, error) {
 	bfs := dag.NewBFS(d.graph)
 	userCtx := userContext{
 		borderTargets: make(map[string]pip.Operations),
 	}
 
-	visitor := func(node pip.Node) {
-		assocs := d.graph.GetAssociationsForSubject(node.Name)
+	visitor := func(node pip.Node) error {
+		assocs, err := d.graph.GetAssociationsForSubject(node.Name)
+		if err != nil {
+			return err
+		}
 		d.collectAssociations(assocs, userCtx.borderTargets)
+
+		return nil
 	}
 
-	propagator := func(node pip.Node, parent pip.Node) {}
+	propagator := func(node pip.Node, parent pip.Node) error {
+		return nil
+	}
 
-	bfs.Traverse(user, propagator, visitor)
+	if err := bfs.Traverse(user, propagator, visitor); err != nil {
+		return userContext{}, err
+	}
 
-	return userCtx
+	return userCtx, nil
 }
 
 func (d decider) collectAssociations(assocs map[string]pip.Operations, borderTargets map[string]pip.Operations) {
@@ -78,10 +98,10 @@ func (d decider) collectAssociations(assocs map[string]pip.Operations, borderTar
 	}
 }
 
-func (d decider) targetDAG(target pip.Node, userCtx userContext) targetContext {
+func (d decider) targetDAG(target pip.Node, userCtx userContext) (targetContext, error) {
 	visitedNodes := make(map[string]map[string]pip.Operations)
 
-	visitor := func(node pip.Node) {
+	visitor := func(node pip.Node) error {
 		nodeCtx, ok := visitedNodes[node.Name]
 		if !ok {
 			nodeCtx = make(map[string]pip.Operations)
@@ -102,9 +122,11 @@ func (d decider) targetDAG(target pip.Node, userCtx userContext) targetContext {
 				}
 			}
 		}
+
+		return nil
 	}
 
-	propagator := func(parent pip.Node, child pip.Node) {
+	propagator := func(parent pip.Node, child pip.Node) error {
 		parentCtx := visitedNodes[parent.Name]
 		nodeCtx, ok := visitedNodes[child.Name]
 		if !ok {
@@ -125,12 +147,12 @@ func (d decider) targetDAG(target pip.Node, userCtx userContext) targetContext {
 		}
 
 		visitedNodes[child.Name] = nodeCtx
+		return nil
 	}
 
 	dfs := dag.NewDFS(d.graph)
-	dfs.Traverse(target, propagator, visitor)
-
-	return targetContext{pcSet: visitedNodes[target.Name]}
+	err := dfs.Traverse(target, propagator, visitor)
+	return targetContext{pcSet: visitedNodes[target.Name]}, err
 }
 
 func (d decider) allowedPermissions(ctx targetContext) pip.Operations {
