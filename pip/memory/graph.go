@@ -15,7 +15,7 @@ type (
 )
 
 func NewGraph() pip.Graph {
-	return graph{
+	return &graph{
 		nodes:        make(map[string]pip.Node),
 		assignments:  make(map[string]map[string]bool),
 		associations: make(map[string]map[string]pip.Operations),
@@ -279,7 +279,7 @@ func (g graph) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON into a graph.
 // This will erase any nodes/assignments/associations that currently exist in the graph.
-func (g graph) UnmarshalJSON(bytes []byte) error {
+func (g *graph) UnmarshalJSON(bytes []byte) error {
 	jg := jsonGraph{
 		Nodes:        make(map[string]pip.Node),
 		Assignments:  make(map[string]map[string]bool),

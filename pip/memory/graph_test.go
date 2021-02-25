@@ -19,21 +19,22 @@ func TestJSON(t *testing.T) {
 	g.Associate("ua1", "oa1", pip.ToOps("r", "w"))
 
 	b, _ := g.MarshalJSON()
-	g.UnmarshalJSON(b)
+	g1 := NewGraph()
+	g1.UnmarshalJSON(b)
 
-	if ok, _ := g.Exists("pc1"); !ok {
+	if ok, _ := g1.Exists("pc1"); !ok {
 		t.Fatal("pc1 should exist but does not")
 	}
-	if ok, _ := g.Exists("oa1"); !ok {
+	if ok, _ := g1.Exists("oa1"); !ok {
 		t.Fatal("oa1 should exist but does not")
 	}
-	if ok, _ := g.Exists("ua1"); !ok {
+	if ok, _ := g1.Exists("ua1"); !ok {
 		t.Fatal("ua1 should exist but does not")
 	}
-	if ok, _ := g.Exists("o1"); !ok {
+	if ok, _ := g1.Exists("o1"); !ok {
 		t.Fatal("o1 should exist but does not")
 	}
-	if ok, _ := g.Exists("u1"); !ok {
+	if ok, _ := g1.Exists("u1"); !ok {
 		t.Fatal("u1 should exist but does not")
 	}
 }
