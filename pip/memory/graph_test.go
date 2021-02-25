@@ -7,11 +7,15 @@ import (
 
 func TestJSON(t *testing.T) {
 	g := NewGraph()
-	g.CreatePolicyClass("pc1", nil)
-	g.CreateNode("oa1", pip.ObjectAttribute, nil, "pc1")
-	g.CreateNode("ua1", pip.UserAttribute, nil, "pc1")
-	g.CreateNode("o1", pip.Object, nil, "oa1")
-	g.CreateNode("u1", pip.User, nil, "ua1")
+	g.CreateNode("pc1", pip.PolicyClass, nil)
+	g.CreateNode("oa1", pip.ObjectAttribute, nil)
+	g.CreateNode("ua1", pip.UserAttribute, nil)
+	g.CreateNode("o1", pip.Object, nil)
+	g.CreateNode("u1", pip.User, nil)
+	g.Assign("oa1", "pc1")
+	g.Assign("ua1", "pc1")
+	g.Assign("u1", "ua1")
+	g.Assign("o1", "oa1")
 	g.Associate("ua1", "oa1", pip.ToOps("r", "w"))
 
 	b, _ := g.MarshalJSON()
