@@ -1,11 +1,12 @@
 package pip
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type (
 	Graph interface {
-		CreatePolicyClass(name string, properties map[string]string) error
-		CreateNode(name string, kind Kind, properties map[string]string, initParent string, parents ...string) error
+		CreateNode(name string, kind Kind, properties map[string]string) error
 		UpdateNode(name string, properties map[string]string) error
 		DeleteNode(name string) error
 		Exists(name string) (bool, error)

@@ -22,25 +22,7 @@ func NewGraph() pip.Graph {
 	}
 }
 
-func (g graph) CreatePolicyClass(name string, properties map[string]string) error {
-	if _, ok := g.nodes[name]; ok {
-		return fmt.Errorf("name %q is already exists", name)
-	}
-
-	if properties == nil {
-		properties = make(map[string]string)
-	}
-
-	g.nodes[name] = pip.Node{
-		Name:       name,
-		Kind:       pip.PolicyClass,
-		Properties: properties,
-	}
-
-	return nil
-}
-
-func (g graph) CreateNode(name string, kind pip.Kind, properties map[string]string, initParent string, parents ...string) error {
+func (g graph) CreateNode(name string, kind pip.Kind, properties map[string]string) error {
 	if _, ok := g.nodes[name]; ok {
 		return fmt.Errorf("name %q is already exists", name)
 	}
@@ -55,18 +37,6 @@ func (g graph) CreateNode(name string, kind pip.Kind, properties map[string]stri
 		Properties: properties,
 	}
 	g.nodes[name] = copyNode(n)
-
-	// assign to initParent
-	if err := g.Assign(name, initParent); err != nil {
-		return fmt.Errorf("error assigning %q to initParent %q: %v", name, initParent, err)
-	}
-
-	// assign parents
-	for _, parent := range parents {
-		if err := g.Assign(name, parent); err != nil {
-			return fmt.Errorf("error assigning %q to parent %q: %v", name, initParent, err)
-		}
-	}
 
 	return nil
 }
