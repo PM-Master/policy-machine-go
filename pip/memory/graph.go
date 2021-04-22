@@ -22,9 +22,9 @@ func NewGraph() pip.Graph {
 	}
 }
 
-func (g graph) CreateNode(name string, kind pip.Kind, properties map[string]string) error {
+func (g graph) CreateNode(name string, kind pip.Kind, properties map[string]string) (pip.Node, error) {
 	if _, ok := g.nodes[name]; ok {
-		return fmt.Errorf("name %q is already exists", name)
+		return pip.Node{}, fmt.Errorf("name %q is already exists", name)
 	}
 
 	if properties == nil {
@@ -36,9 +36,10 @@ func (g graph) CreateNode(name string, kind pip.Kind, properties map[string]stri
 		Kind:       kind,
 		Properties: properties,
 	}
-	g.nodes[name] = copyNode(n)
+	node := copyNode(n)
+	g.nodes[name] = node
 
-	return nil
+	return node, nil
 }
 
 func (g graph) UpdateNode(name string, properties map[string]string) error {

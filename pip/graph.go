@@ -6,7 +6,7 @@ import (
 
 type (
 	Graph interface {
-		CreateNode(name string, kind Kind, properties map[string]string) error
+		CreateNode(name string, kind Kind, properties map[string]string) (Node, error)
 		UpdateNode(name string, properties map[string]string) error
 		DeleteNode(name string) error
 		Exists(name string) (bool, error)
