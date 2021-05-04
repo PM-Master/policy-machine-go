@@ -49,6 +49,10 @@ func (d decider) Decide(user string, target string, permissions ...string) (bool
 
 	// resolve permissions
 	allowed := d.allowedPermissions(targetCtx)
+	if allowed[pip.AllOps] {
+		return true, nil
+	}
+
 	for _, permission := range permissions {
 		if !allowed[permission] {
 			return false, nil

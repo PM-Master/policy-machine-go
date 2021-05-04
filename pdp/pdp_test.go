@@ -55,3 +55,23 @@ func TestPDP2(t *testing.T) {
 		t.Fatal("u1 should have [r] on o1")
 	}
 }
+
+func TestPDPAllOps(t *testing.T) {
+	g := memory.NewGraph()
+	g.CreateNode("pc1", pip.PolicyClass, nil)
+	g.CreateNode("oa1", pip.ObjectAttribute, nil)
+	g.CreateNode("ua1", pip.UserAttribute, nil)
+	g.CreateNode("o1", pip.Object, nil)
+	g.CreateNode("u1", pip.User, nil)
+	g.Assign("u1", "ua1")
+	g.Assign("o1", "oa1")
+	g.Assign("oa1", "pc1")
+	g.Assign("ua1", "pc1")
+	g.Associate("ua1", "oa1", pip.ToOps("*"))
+
+	decider := NewDecider(g)
+	actual, _ := decider.Decide("u1", "o1", "r")
+	if !actual {
+		t.Fatal("u1 should have [r] on o1")
+	}
+}
