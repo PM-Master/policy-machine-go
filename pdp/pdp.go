@@ -175,7 +175,7 @@ func (d decider) allowedPermissions(ctx targetContext) pip.Operations {
 				for op := range ops {
 					allowed[op] = true
 				}
-			} else if !allowed[pip.AllOps] {
+			} else if !ops[pip.AllOps] {
 				for op := range allowed {
 					if _, ok := ops[op]; !ok {
 						delete(allowed, op)
