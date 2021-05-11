@@ -82,3 +82,7 @@ func ToOps(ops ...string) (operations Operations) {
 	}
 	return operations
 }
+
+func (o Operations) Contains(op string) bool {
+	return o[op] || o[AllOps]
+}

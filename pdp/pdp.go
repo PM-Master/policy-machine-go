@@ -8,7 +8,8 @@ import (
 
 type (
 	Decider interface {
-		Decide(user string, target string, permissions ...string) (bool, error)
+		HasPermissions(user string, target string, permissions ...string) (bool, error)
+		ListPermissions(user string, target string) (pip.Operations, error)
 	}
 
 	decider struct {
@@ -28,7 +29,22 @@ func NewDecider(graph pip.Graph) Decider {
 	return decider{graph: graph}
 }
 
-func (d decider) Decide(user string, target string, permissions ...string) (bool, error) {
+func (d decider) HasPermissions(user string, target string, permissions ...string) (bool, error) {
+	allowed, err := d.ListPermissions(user, target)
+	if err != nil {
+		return false, fmt.Errorf("error checking if user %s has permissions %s on target %s", user, permissions, target)
+	}
+
+	for _, permission := range permissions {
+		if !allowed.Contains(permission) {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (d decider) ListPermissions(user string, target string) (pip.Operations, error) {
 	var (
 		userCtx   userContext
 		targetCtx targetContext
@@ -38,28 +54,19 @@ func (d decider) Decide(user string, target string, permissions ...string) (bool
 	// process user dag
 	userNode, _ := d.graph.GetNode(user)
 	if userCtx, err = d.userDAG(userNode); err != nil {
-		return false, fmt.Errorf("error processing user side of graph for %q: %v", user, err)
+		return nil, fmt.Errorf("error processing user side of graph for %q: %v", user, err)
 	}
 
 	// process target dag
 	targetNode, _ := d.graph.GetNode(target)
 	if targetCtx, err = d.targetDAG(targetNode, userCtx); err != nil {
-		return false, fmt.Errorf("error processing target side of graph for %q: %v", target, err)
+		return nil, fmt.Errorf("error processing target side of graph for %q: %v", target, err)
 	}
 
 	// resolve permissions
 	allowed := d.allowedPermissions(targetCtx)
-	if allowed[pip.AllOps] {
-		return true, nil
-	}
 
-	for _, permission := range permissions {
-		if !allowed[permission] {
-			return false, nil
-		}
-	}
-
-	return true, nil
+	return allowed, nil
 }
 
 func (d decider) userDAG(user pip.Node) (userContext, error) {
