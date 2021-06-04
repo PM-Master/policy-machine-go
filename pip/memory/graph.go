@@ -3,35 +3,51 @@ package memory
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PM-Master/policy-machine-go/pip"
+	"github.com/PM-Master/policy-machine-go/ngac"
+	"github.com/PM-Master/policy-machine-go/ngac/graph"
 )
 
 type (
-	graph struct {
-		nodes        map[string]pip.Node
+	memgraph struct {
+		nodes        map[string]graph.Node
 		assignments  map[string]map[string]bool
-		associations map[string]map[string]pip.Operations
+		associations map[string]map[string]graph.Operations
 	}
 )
 
-func NewGraph() pip.Graph {
-	return &graph{
-		nodes:        make(map[string]pip.Node),
+func NewGraph() ngac.Graph {
+	return &memgraph{
+		nodes:        make(map[string]graph.Node),
 		assignments:  make(map[string]map[string]bool),
-		associations: make(map[string]map[string]pip.Operations),
+		associations: make(map[string]map[string]graph.Operations),
 	}
 }
 
-func (g graph) CreateNode(name string, kind pip.Kind, properties map[string]string) (pip.Node, error) {
+func (g memgraph) CreatePolicyClass(name string) error {
 	if _, ok := g.nodes[name]; ok {
-		return pip.Node{}, fmt.Errorf("name %q is already exists", name)
+		return fmt.Errorf("name %q already exists", name)
+	}
+
+	g.nodes[name] = graph.Node{
+		Name:       name,
+		Kind:       graph.PolicyClass,
+		Properties: make(map[string]string),
+	}
+
+	return nil
+}
+
+func (g memgraph) CreateNode(name string, kind graph.Kind, properties map[string]string, parent string, parents ...string) (graph.Node, error) {
+	if _, ok := g.nodes[name]; ok {
+		return graph.Node{}, fmt.Errorf("name %q already exists", name)
 	}
 
 	if properties == nil {
 		properties = make(map[string]string)
 	}
 
-	n := pip.Node{
+	// create the node
+	n := graph.Node{
 		Name:       name,
 		Kind:       kind,
 		Properties: properties,
@@ -39,10 +55,31 @@ func (g graph) CreateNode(name string, kind pip.Kind, properties map[string]stri
 	node := copyNode(n)
 	g.nodes[name] = node
 
+	// set assignments for the new node
+	assignments := make(map[string]bool)
+
+	// check the initial parent exists
+	if _, ok := g.nodes[parent]; !ok {
+		return graph.Node{}, fmt.Errorf("parent %q does not exist", parent)
+	}
+
+	assignments[parent] = true
+
+	// check other parents exist and add to assignments
+	for _, p := range parents {
+		if _, ok := g.nodes[parent]; !ok {
+			return graph.Node{}, fmt.Errorf("parent %q does not exist", parent)
+		}
+
+		assignments[p] = true
+	}
+
+	g.assignments[name] = assignments
+
 	return node, nil
 }
 
-func (g graph) UpdateNode(name string, properties map[string]string) error {
+func (g memgraph) UpdateNode(name string, properties map[string]string) error {
 	if ok, _ := g.Exists(name); !ok {
 		return fmt.Errorf("node %q does not exist", name)
 	}
@@ -54,7 +91,7 @@ func (g graph) UpdateNode(name string, properties map[string]string) error {
 	return nil
 }
 
-func (g graph) DeleteNode(name string) error {
+func (g memgraph) DeleteNode(name string) error {
 	// delete this node's assignments
 	// return an error if this node has other nodes assigned to it still
 	if children, _ := g.GetChildren(name); len(children) > 0 {
@@ -81,13 +118,13 @@ func (g graph) DeleteNode(name string) error {
 	return nil
 }
 
-func (g graph) Exists(name string) (bool, error) {
+func (g memgraph) Exists(name string) (bool, error) {
 	_, ok := g.nodes[name]
 	return ok, nil
 }
 
-func (g graph) GetNodes() (map[string]pip.Node, error) {
-	nodes := make(map[string]pip.Node)
+func (g memgraph) GetNodes() (map[string]graph.Node, error) {
+	nodes := make(map[string]graph.Node)
 	for _, node := range g.nodes {
 		copyNode := copyNode(node)
 		nodes[copyNode.Name] = copyNode
@@ -95,16 +132,16 @@ func (g graph) GetNodes() (map[string]pip.Node, error) {
 	return nodes, nil
 }
 
-func (g graph) GetNode(name string) (pip.Node, error) {
+func (g memgraph) GetNode(name string) (graph.Node, error) {
 	node, ok := g.nodes[name]
 	if !ok {
-		return pip.Node{}, fmt.Errorf("node %q does not exist", name)
+		return graph.Node{}, fmt.Errorf("node %q does not exist", name)
 	}
 	return copyNode(node), nil
 }
 
-func (g graph) Find(kind pip.Kind, properties map[string]string) (map[string]pip.Node, error) {
-	found := make(map[string]pip.Node)
+func (g memgraph) Find(kind graph.Kind, properties map[string]string) (map[string]graph.Node, error) {
+	found := make(map[string]graph.Node)
 	for _, node := range g.nodes {
 		if node.Kind != kind {
 			continue
@@ -125,10 +162,10 @@ func (g graph) Find(kind pip.Kind, properties map[string]string) (map[string]pip
 	return found, nil
 }
 
-func (g graph) Assign(child string, parent string) error {
+func (g memgraph) Assign(child string, parent string) error {
 	var (
-		childNode  pip.Node
-		parentNode pip.Node
+		childNode  graph.Node
+		parentNode graph.Node
 		err        error
 	)
 
@@ -139,7 +176,7 @@ func (g graph) Assign(child string, parent string) error {
 		return err
 	}
 
-	if err = pip.CheckAssignment(childNode.Kind, parentNode.Kind); err != nil {
+	if err = graph.CheckAssignment(childNode.Kind, parentNode.Kind); err != nil {
 		return err
 	}
 
@@ -151,13 +188,13 @@ func (g graph) Assign(child string, parent string) error {
 	return nil
 }
 
-func (g graph) Deassign(child string, parent string) error {
+func (g memgraph) Deassign(child string, parent string) error {
 	delete(g.assignments[child], parent)
 	return nil
 }
 
-func (g graph) GetChildren(name string) (map[string]pip.Node, error) {
-	children := make(map[string]pip.Node)
+func (g memgraph) GetChildren(name string) (map[string]graph.Node, error) {
+	children := make(map[string]graph.Node)
 	for nodeName, assignmentMap := range g.assignments {
 		if assignmentMap[name] {
 			node, _ := g.GetNode(nodeName)
@@ -167,9 +204,9 @@ func (g graph) GetChildren(name string) (map[string]pip.Node, error) {
 	return children, nil
 }
 
-func (g graph) GetParents(name string) (map[string]pip.Node, error) {
+func (g memgraph) GetParents(name string) (map[string]graph.Node, error) {
 	assignments := g.assignments[name]
-	parents := make(map[string]pip.Node)
+	parents := make(map[string]graph.Node)
 	for nodeName := range assignments {
 		node, _ := g.GetNode(nodeName)
 		parents[nodeName] = node
@@ -177,7 +214,7 @@ func (g graph) GetParents(name string) (map[string]pip.Node, error) {
 	return parents, nil
 }
 
-func (g graph) GetAssignments() (map[string]map[string]bool, error) {
+func (g memgraph) GetAssignments() (map[string]map[string]bool, error) {
 	assignments := make(map[string]map[string]bool)
 	for child, parents := range g.assignments {
 		retParents := make(map[string]bool)
@@ -195,10 +232,10 @@ func (g graph) GetAssignments() (map[string]map[string]bool, error) {
 	return assignments, nil
 }
 
-func (g graph) Associate(subject string, target string, operations pip.Operations) error {
+func (g memgraph) Associate(subject string, target string, operations graph.Operations) error {
 	var (
-		subjectNode pip.Node
-		targetNode  pip.Node
+		subjectNode graph.Node
+		targetNode  graph.Node
 		err         error
 	)
 
@@ -209,25 +246,25 @@ func (g graph) Associate(subject string, target string, operations pip.Operation
 		return err
 	}
 
-	if err = pip.CheckAssociation(subjectNode.Kind, targetNode.Kind); err != nil {
+	if err = graph.CheckAssociation(subjectNode.Kind, targetNode.Kind); err != nil {
 		return err
 	}
 
 	if _, ok := g.associations[subject]; !ok {
-		g.associations[subject] = make(map[string]pip.Operations)
+		g.associations[subject] = make(map[string]graph.Operations)
 	}
 	g.associations[subject][target] = copyOps(operations)
 
 	return nil
 }
 
-func (g graph) Dissociate(subject string, target string) error {
+func (g memgraph) Dissociate(subject string, target string) error {
 	delete(g.associations[subject], target)
 	return nil
 }
 
-func (g graph) GetAssociationsForSubject(subject string) (map[string]pip.Operations, error) {
-	retAssocs := make(map[string]pip.Operations)
+func (g memgraph) GetAssociationsForSubject(subject string) (map[string]graph.Operations, error) {
+	retAssocs := make(map[string]graph.Operations)
 	assocs := g.associations[subject]
 	for target, ops := range assocs {
 		retAssocs[target] = copyOps(ops)
@@ -235,10 +272,10 @@ func (g graph) GetAssociationsForSubject(subject string) (map[string]pip.Operati
 	return retAssocs, nil
 }
 
-func (g graph) GetAssociations() (map[string]map[string]pip.Operations, error) {
-	assocs := make(map[string]map[string]pip.Operations)
+func (g memgraph) GetAssociations() (map[string]map[string]graph.Operations, error) {
+	assocs := make(map[string]map[string]graph.Operations)
 	for subject, subjectAssocs := range g.associations {
-		retAssocs := make(map[string]pip.Operations)
+		retAssocs := make(map[string]graph.Operations)
 		for target, ops := range subjectAssocs {
 			retAssocs[target] = copyOps(ops)
 		}
@@ -250,17 +287,17 @@ func (g graph) GetAssociations() (map[string]map[string]pip.Operations, error) {
 }
 
 type jsonGraph struct {
-	Nodes        map[string]pip.Node                  `json:"nodes"`
-	Assignments  map[string]map[string]bool           `json:"assignments"`
-	Associations map[string]map[string]pip.Operations `json:"associations"`
+	Nodes        map[string]graph.Node                  `json:"nodes"`
+	Assignments  map[string]map[string]bool             `json:"assignments"`
+	Associations map[string]map[string]graph.Operations `json:"associations"`
 }
 
-func (g graph) MarshalJSON() ([]byte, error) {
+func (g memgraph) MarshalJSON() ([]byte, error) {
 	var err error
 	jg := jsonGraph{
-		Nodes:        make(map[string]pip.Node),
+		Nodes:        make(map[string]graph.Node),
 		Assignments:  make(map[string]map[string]bool),
-		Associations: make(map[string]map[string]pip.Operations),
+		Associations: make(map[string]map[string]graph.Operations),
 	}
 
 	if jg.Nodes, err = g.GetNodes(); err != nil {
@@ -280,11 +317,11 @@ func (g graph) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON into a graph.
 // This will erase any nodes/assignments/associations that currently exist in the graph.
-func (g *graph) UnmarshalJSON(bytes []byte) error {
+func (g *memgraph) UnmarshalJSON(bytes []byte) error {
 	jg := jsonGraph{
-		Nodes:        make(map[string]pip.Node),
+		Nodes:        make(map[string]graph.Node),
 		Assignments:  make(map[string]map[string]bool),
-		Associations: make(map[string]map[string]pip.Operations),
+		Associations: make(map[string]map[string]graph.Operations),
 	}
 
 	if err := json.Unmarshal(bytes, &jg); err != nil {
@@ -298,20 +335,20 @@ func (g *graph) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-func copyNode(node pip.Node) pip.Node {
+func copyNode(node graph.Node) graph.Node {
 	props := make(map[string]string)
 	for k, v := range node.Properties {
 		props[k] = v
 	}
-	return pip.Node{
+	return graph.Node{
 		Name:       node.Name,
 		Kind:       node.Kind,
 		Properties: props,
 	}
 }
 
-func copyOps(operations pip.Operations) pip.Operations {
-	retOps := pip.ToOps()
+func copyOps(operations graph.Operations) graph.Operations {
+	retOps := graph.ToOps()
 	for op := range operations {
 		retOps[op] = true
 	}

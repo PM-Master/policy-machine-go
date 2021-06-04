@@ -1,4 +1,4 @@
-package pip
+package graph
 
 import "fmt"
 
@@ -24,6 +24,23 @@ const (
 	AllOps = "*"
 )
 
+func (k Kind) String() string {
+	switch k {
+	case PolicyClass:
+		return "PC"
+	case ObjectAttribute:
+		return "OA"
+	case UserAttribute:
+		return "UA"
+	case Object:
+		return "O"
+	case User:
+		return "U"
+	default:
+		return "nil"
+	}
+}
+
 var (
 	validAssignments = map[Kind]map[Kind]bool{
 		PolicyClass:     {},
@@ -41,23 +58,6 @@ var (
 		User:            {},
 	}
 )
-
-func (k Kind) String() string {
-	switch k {
-	case PolicyClass:
-		return "PC"
-	case ObjectAttribute:
-		return "OA"
-	case UserAttribute:
-		return "UA"
-	case Object:
-		return "O"
-	case User:
-		return "U"
-	default:
-		return "nil"
-	}
-}
 
 func CheckAssignment(childKind Kind, parentKind Kind) error {
 	if !validAssignments[childKind][parentKind] {
@@ -85,4 +85,24 @@ func ToOps(ops ...string) (operations Operations) {
 
 func (o Operations) Contains(op string) bool {
 	return o[op] || o[AllOps]
+}
+
+func (o Operations) Add(op string) {
+	o[op] = true
+}
+
+func (o Operations) AddAll(operations Operations) {
+	for op := range operations {
+		o.Add(op)
+	}
+}
+
+func (o Operations) Remove(op string) {
+	delete(o, op)
+}
+
+func (o Operations) RemoveAll(operations Operations) {
+	for op := range operations {
+		o.Remove(op)
+	}
 }

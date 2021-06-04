@@ -1,22 +1,18 @@
 package memory
 
 import (
-	"github.com/PM-Master/policy-machine-go/pip"
+	"github.com/PM-Master/policy-machine-go/ngac/graph"
 	"testing"
 )
 
 func TestJSON(t *testing.T) {
 	g := NewGraph()
-	g.CreateNode("pc1", pip.PolicyClass, nil)
-	g.CreateNode("oa1", pip.ObjectAttribute, nil)
-	g.CreateNode("ua1", pip.UserAttribute, nil)
-	g.CreateNode("o1", pip.Object, nil)
-	g.CreateNode("u1", pip.User, nil)
-	g.Assign("oa1", "pc1")
-	g.Assign("ua1", "pc1")
-	g.Assign("u1", "ua1")
-	g.Assign("o1", "oa1")
-	g.Associate("ua1", "oa1", pip.ToOps("r", "w"))
+	g.CreatePolicyClass("pc1")
+	g.CreateNode("oa1", graph.ObjectAttribute, nil, "pc1")
+	g.CreateNode("ua1", graph.UserAttribute, nil, "pc1")
+	g.CreateNode("o1", graph.Object, nil, "oa1")
+	g.CreateNode("u1", graph.User, nil, "ua1")
+	g.Associate("ua1", "oa1", graph.ToOps("r", "w"))
 
 	b, _ := g.MarshalJSON()
 	g1 := NewGraph()
