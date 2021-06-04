@@ -151,3 +151,11 @@ func TestParseDeassign(t *testing.T) {
 	require.Equal(t, "ua1", deassignStmt.Child)
 	require.Equal(t, []string{"ua2", "ua3"}, deassignStmt.Parents)
 }
+
+func TestWithComments(t *testing.T) {
+	s := "# comment\n" +
+		"deassign ua1 FROM ua2, ua3;"
+	stmts, err := Parse(s)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(stmts))
+}

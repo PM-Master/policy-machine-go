@@ -8,6 +8,18 @@ import (
 )
 
 func Parse(pal string) ([]ngac.Statement, error) {
+	split := strings.Split(pal, "\n")
+	lines := make([]string, 0)
+	for _, s := range split {
+		if strings.HasPrefix(strings.TrimSpace(s), "#") {
+			continue
+		}
+
+		lines = append(lines, s)
+	}
+
+	pal = strings.Join(lines, "\n")
+
 	statements := splitStatements(pal)
 	return parseStatements(statements)
 }
