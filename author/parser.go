@@ -46,6 +46,8 @@ func parseStatements(statements []string) ([]ngac.Statement, error) {
 			stmt, err = parseGrant(stmtStr)
 		} else if strings.HasPrefix(upperStmtStr, "DENY") {
 			stmt, err = parseDeny(stmtStr)
+		} else if strings.HasPrefix(upperStmtStr, "#") {
+			continue
 		}
 
 		if err != nil {
