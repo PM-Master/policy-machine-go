@@ -229,15 +229,18 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 		endIndex = 0
 		var f string
 		for endIndex, f = range propFields {
-			if f == "IN" {
+			if strings.ToUpper(f) == "IN" {
 				break
 			}
 		}
-		endIndex--
 
 		propsStr := strings.Join(propFields[2:endIndex], " ")
 		split := strings.Split(propsStr, ",")
 		for _, prop := range split {
+			if !strings.Contains(prop, "=") {
+				continue
+			}
+
 			prop = strings.TrimSpace(prop)
 			kv := strings.Split(prop, "=")
 			properties[kv[0]] = kv[1]

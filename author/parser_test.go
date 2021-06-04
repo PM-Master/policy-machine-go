@@ -35,7 +35,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseCreatePolicyClass(t *testing.T) {
-	s := `create policy RBAC(
+	s := `create policy RBAC (
     		create user attribute ua1 with properties k1=v1, k2=v2 IN ua2, ua3;
 		);`
 	stmt, err := parseCreatePolicy(s)
@@ -84,6 +84,15 @@ func TestParseCreateNode(t *testing.T) {
 	require.Equal(t, "oa1", nodeStmt.Name)
 	require.Equal(t, graph.ObjectAttribute, nodeStmt.Kind)
 	require.Equal(t, []string{"oa2"}, nodeStmt.Parents)
+
+	s = "create object attribute oa1 with properties k1=v1 in oa2"
+	stmt, err = parseCreateNode(s)
+	require.NoError(t, err)
+	nodeStmt = stmt.(ngac.CreateNodeStatement)
+	require.Equal(t, "oa1", nodeStmt.Name)
+	require.Equal(t, graph.ObjectAttribute, nodeStmt.Kind)
+	require.Equal(t, []string{"oa2"}, nodeStmt.Parents)
+	require.Equal(t, map[string]string{"k1": "v1"}, nodeStmt.Properties)
 
 	s = "create object attribute oa1 with properties k1=v1, k2=v2 in oa2"
 	stmt, err = parseCreateNode(s)
