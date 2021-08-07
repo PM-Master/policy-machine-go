@@ -20,7 +20,7 @@ func (m mempip) Graph() ngac.Graph {
 	return m.graph
 }
 
-func (m mempip) Prohibitions() ngac.Prohibitions {
+func (m mempip) Prohibitions() ngac.Prohibition {
 	return m.prohibitions
 }
 
