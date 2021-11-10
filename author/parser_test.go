@@ -155,7 +155,27 @@ func TestParseDeassign(t *testing.T) {
 func TestWithComments(t *testing.T) {
 	s := "# comment\n" +
 		"deassign ua1 FROM ua2, ua3;"
-	stmts, err := Parse(s)
+	stmts, _, err := Parse(s)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(stmts))
+}
+
+func TestParseFunction(t *testing.T) {
+	s := `
+func my_func(arg1, arg2) {
+  assign $arg1_123 to $arg2;
+}
+`
+	stmts, functions, err := Parse(s)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(stmts))
+	require.Equal(t, 1, len(functions))
+	function, ok := functions["my_func"]
+	require.True(t, ok)
+	require.Equal(t, "my_func", function.Name)
+	require.Equal(t, []string{"arg1", "arg2"}, function.Args)
+	require.Equal(t, []ngac.Statement{ngac.AssignStatement{
+		Child:   "$arg1_123",
+		Parents: []string{"$arg2"},
+	}}, function.Stmts)
 }

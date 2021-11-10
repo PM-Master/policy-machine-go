@@ -4,10 +4,16 @@ import (
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/ngac"
 	"github.com/PM-Master/policy-machine-go/ngac/graph"
-	"strings"
+	strings "strings"
 )
 
-func Parse(pal string) ([]ngac.Statement, error) {
+type ParsedFunction struct {
+	Name  string
+	Args  map[string]bool
+	Stmts string
+}
+
+func Parse(pal string) ([]ngac.Statement, map[string]ParsedFunction, error) {
 	split := strings.Split(pal, "\n")
 	lines := make([]string, 0)
 	for _, s := range split {
@@ -24,8 +30,9 @@ func Parse(pal string) ([]ngac.Statement, error) {
 	return parseStatements(statements)
 }
 
-func parseStatements(statements []string) ([]ngac.Statement, error) {
+func parseStatements(statements []string) ([]ngac.Statement, map[string]ParsedFunction, error) {
 	stmts := make([]ngac.Statement, 0)
+	functions := make(map[string]ParsedFunction)
 	for _, stmtStr := range statements {
 		stmtStr = strings.TrimSpace(stmtStr)
 		stmtStr = strings.TrimSuffix(stmtStr, ";")
@@ -44,7 +51,7 @@ func parseStatements(statements []string) ([]ngac.Statement, error) {
 			obligationParser := NewObligationParser()
 			o, err := obligationParser.Parse(stmtStr)
 			if err != nil {
-				return nil, fmt.Errorf("error parsing obligation: %w", err)
+				return nil, nil, fmt.Errorf("error parsing obligation: %w", err)
 			}
 
 			stmt = ngac.ObligationStatement{Obligation: o}
@@ -58,18 +65,56 @@ func parseStatements(statements []string) ([]ngac.Statement, error) {
 			stmt, err = parseGrant(stmtStr)
 		} else if strings.HasPrefix(upperStmtStr, "DENY") {
 			stmt, err = parseDeny(stmtStr)
+		} else if strings.HasPrefix(upperStmtStr, "FUNC") {
+			function, err := parseFunc(stmtStr)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			functions[function.Name] = function
+			continue
 		} else if strings.HasPrefix(upperStmtStr, "#") {
 			continue
+		} else {
+			err = fmt.Errorf("unknown statement %s", stmtStr)
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("error parsing statement %q: %w", stmtStr, err)
+			return nil, nil, fmt.Errorf("error parsing statement %q: %w", stmtStr, err)
 		}
 
 		stmts = append(stmts, stmt)
 	}
 
-	return stmts, nil
+	return stmts, functions, nil
+}
+
+func parseFunc(funcStr string) (ParsedFunction, error) {
+	funcStr = strings.TrimSpace(strings.Replace(funcStr, "func", "", 1))
+	index := strings.Index(funcStr, "{")
+	funcDefStr := funcStr[0:index]
+	index = strings.Index(funcStr, "(")
+	funcName := funcDefStr[0:index]
+
+	argsStr := funcStr[strings.Index(funcStr, "(")+1 : strings.Index(funcStr, ")")]
+	argFields := strings.Fields(argsStr)
+	args := make(map[string]bool, 0)
+	for _, argField := range argFields {
+		argField = strings.TrimSpace(strings.TrimSuffix(argField, ","))
+		args[argField] = true
+	}
+
+	stmtStr := funcStr[strings.Index(funcStr, "{")+1 : strings.Index(funcStr, "}")]
+	/*stmts, _, err := Parse(stmtStr)
+	if err != nil {
+		return ParsedFunction{}, err
+	}*/
+
+	return ParsedFunction{
+		Name:  funcName,
+		Args:  args,
+		Stmts: stmtStr,
+	}, nil
 }
 
 func parseDeny(stmtStr string) (ngac.Statement, error) {
@@ -293,7 +338,7 @@ func parseCreatePolicy(stmtStr string) (ngac.Statement, error) {
 	endIndex := strings.LastIndex(stmtStr, ")")
 	stmtsStr := strings.TrimSpace(stmtStr[startIndex:endIndex])
 
-	stmts, err := Parse(stmtsStr)
+	stmts, _, err := Parse(stmtsStr)
 	if err != nil {
 		return nil, err
 	}
@@ -309,8 +354,27 @@ func splitStatements(pal string) []string {
 	stmt := ""
 	parenCounter := 0
 	fields := strings.Fields(pal)
+	isFunc := false
 	for _, f := range fields {
 		stmt = fmt.Sprintf("%v %v", stmt, f)
+		if strings.HasPrefix(f, "func") {
+			isFunc = true
+		}
+
+		addStmt := func() {
+			stmts = append(stmts, stmt)
+			stmt = ""
+		}
+
+		if isFunc {
+			if strings.Contains(f, "}") {
+				isFunc = false
+				addStmt()
+			} else {
+				continue
+			}
+		}
+
 		if strings.Contains(f, ";") {
 			if strings.Contains(f, ")") {
 				parenCounter--
@@ -320,8 +384,7 @@ func splitStatements(pal string) []string {
 				continue
 			}
 
-			stmts = append(stmts, stmt)
-			stmt = ""
+			addStmt()
 		} else if strings.Contains(f, "(") {
 			parenCounter++
 		} else if strings.Contains(f, ")") {

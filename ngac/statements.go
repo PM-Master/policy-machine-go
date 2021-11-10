@@ -11,10 +11,6 @@ type (
 		Apply(fe FunctionalEntity) error
 	}
 
-	StatementParser interface {
-		Parse(stmt string) (Statement, error)
-	}
-
 	CreatePolicyStatement struct {
 		Name       string
 		Statements []Statement

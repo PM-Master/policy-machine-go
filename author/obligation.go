@@ -149,7 +149,7 @@ func (e eventParser) parseOn(on string) []string {
 
 func (r responseParser) Parse(response string) (ngac.ResponsePattern, error) {
 	response = response[strings.Index(response, "(")+1 : strings.LastIndex(response, ")")]
-	statements, err := Parse(response)
+	statements, _, err := Parse(response)
 	if err != nil {
 		return ngac.ResponsePattern{}, err
 	}
