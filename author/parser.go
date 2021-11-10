@@ -33,10 +33,13 @@ func Parse(pal string) ([]ngac.Statement, map[string]ParsedFunction, error) {
 func parseStatements(statements []string) ([]ngac.Statement, map[string]ParsedFunction, error) {
 	stmts := make([]ngac.Statement, 0)
 	functions := make(map[string]ParsedFunction)
+	vars := make(map[string]string, 0)
 	for _, stmtStr := range statements {
-		stmtStr = strings.TrimSpace(stmtStr)
-		stmtStr = strings.TrimSuffix(stmtStr, ";")
+		stmtStr = strings.TrimSuffix(strings.TrimSpace(stmtStr), ";")
 		upperStmtStr := strings.ToUpper(stmtStr)
+
+		// replace variables in stmtStr
+		stmtStr = resolveVars(stmtStr, vars)
 
 		var (
 			stmt ngac.Statement
@@ -72,8 +75,19 @@ func parseStatements(statements []string) ([]ngac.Statement, map[string]ParsedFu
 			}
 
 			functions[function.Name] = function
+
 			continue
 		} else if strings.HasPrefix(upperStmtStr, "#") {
+			continue
+		} else if strings.HasPrefix(upperStmtStr, "LET") {
+			varName, varValue, err := parseVar(stmtStr)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			varName = fmt.Sprintf("$%s", varName)
+			vars[varName] = varValue
+
 			continue
 		} else {
 			err = fmt.Errorf("unknown statement %s", stmtStr)
@@ -87,6 +101,23 @@ func parseStatements(statements []string) ([]ngac.Statement, map[string]ParsedFu
 	}
 
 	return stmts, functions, nil
+}
+
+func resolveVars(stmt string, vars map[string]string) string {
+	for name, value := range vars {
+		stmt = strings.ReplaceAll(stmt, name, value)
+	}
+
+	return stmt
+}
+
+func parseVar(varStr string) (string, string, error) {
+	fields := strings.Fields(varStr)
+	if len(fields) < 4 {
+		return "", "", fmt.Errorf("not enough tokens in variable decleration statement %q", varStr)
+	}
+
+	return fields[1], fields[3], nil
 }
 
 func parseFunc(funcStr string) (ParsedFunction, error) {
@@ -105,10 +136,6 @@ func parseFunc(funcStr string) (ParsedFunction, error) {
 	}
 
 	stmtStr := funcStr[strings.Index(funcStr, "{")+1 : strings.Index(funcStr, "}")]
-	/*stmts, _, err := Parse(stmtStr)
-	if err != nil {
-		return ParsedFunction{}, err
-	}*/
 
 	return ParsedFunction{
 		Name:  funcName,

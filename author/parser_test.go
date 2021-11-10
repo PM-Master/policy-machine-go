@@ -179,3 +179,26 @@ func my_func(arg1, arg2) {
 		Parents: []string{"$arg2"},
 	}}, function.Stmts)
 }
+
+func TestResolveVars(t *testing.T) {
+	s := "$arg1 world, this is a $arg2"
+	s = resolveVars(s, map[string]string{"$arg1": "hello", "$arg2": "test"})
+	require.Equal(t, "hello world, this is a test", s)
+}
+
+func TestVars(t *testing.T) {
+	s := `
+let x = foo;
+let y = bar;
+create object attribute $x_test in $y;
+`
+	stmts, _, err := Parse(s)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(stmts))
+	require.Equal(t, ngac.CreateNodeStatement{
+		Name:       "foo_test",
+		Kind:       graph.ObjectAttribute,
+		Properties: make(map[string]string),
+		Parents:    []string{"bar"},
+	}, stmts[0])
+}
