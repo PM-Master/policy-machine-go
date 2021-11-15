@@ -190,6 +190,7 @@ func (d decider) targetDAG(target graph.Node, userCtx userContext) (targetContex
 func (d decider) resolvePermissions(userCtx userContext, targetContext targetContext, target string) graph.Operations {
 	allowed := d.allowedPermissions(targetContext)
 	denied := d.deniedPermissions(userCtx, targetContext, target)
+
 	allowed.RemoveAll(denied)
 
 	return allowed

@@ -1,12 +1,18 @@
 package ngac
 
-import "github.com/PM-Master/policy-machine-go/ngac/graph"
+import (
+	"encoding/json"
+	"github.com/PM-Master/policy-machine-go/ngac/graph"
+)
 
 type (
 	Prohibitions interface {
 		Add(prohibition Prohibition) error
 		Get(subject string) ([]Prohibition, error)
 		Delete(subject string, prohibitionName string) error
+
+		json.Marshaler
+		json.Unmarshaler
 	}
 
 	Prohibition struct {

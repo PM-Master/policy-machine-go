@@ -201,4 +201,29 @@ create object attribute $x_test in $y;
 		Properties: make(map[string]string),
 		Parents:    []string{"bar"},
 	}, stmts[0])
+
+	s = `
+create policy test_policy(
+  let x = foo;
+  let y = bar;
+  create object attribute $x_test in $y;
+);
+`
+	stmts, _, err = Parse(s)
+	require.NoError(t, err)
+
+	expected := ngac.CreatePolicyStatement{
+		Name: "test_policy",
+		Statements: []ngac.Statement{
+			ngac.CreateNodeStatement{
+				Name:       "foo_test",
+				Kind:       graph.ObjectAttribute,
+				Properties: make(map[string]string),
+				Parents:    []string{"bar"},
+			},
+		},
+	}
+
+	require.Equal(t, 1, len(stmts))
+	require.Equal(t, expected, stmts[0])
 }
