@@ -39,7 +39,7 @@ func TestApply(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, parents, "rbac")
 
-	err = author.Exec(pip, "my_function", map[string]string{"arg1": "my_arg1", "arg2": "my_arg2"})
+	err = author.Exec(pip, "my_function1", map[string]string{"arg1": "my_arg1", "arg2": "my_arg2"})
 	require.NoError(t, err)
 
 	children, err := pip.Graph().GetChildren("rbac")

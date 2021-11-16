@@ -48,7 +48,7 @@ func (a *Author) ReadPAL(path string) error {
 			return fmt.Errorf("error loading PAL files: %w", err)
 		}
 	} else {
-		files = append(files, fileInfo.Name())
+		files = append(files, path)
 	}
 
 	functions := make(map[string]ParsedFunction)
