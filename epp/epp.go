@@ -65,11 +65,6 @@ func resolveArgs(stmt ngac.Statement, args map[string]string) (ngac.Statement, e
 
 	if createPCStmt, ok := stmt.(ngac.CreatePolicyStatement); ok {
 		createPCStmt.Name = replaceArgs(createPCStmt.Name, args)
-		createPCStmt.Statements, err = resolveStatements(createPCStmt.Statements, args)
-		if err != nil {
-			return nil, fmt.Errorf("error resolving create policy statements: %w", err)
-		}
-
 		return createPCStmt, nil
 	} else if createNodeStmt, ok := stmt.(ngac.CreateNodeStatement); ok {
 		createNodeStmt.Name = replaceArgs(createNodeStmt.Name, args)
