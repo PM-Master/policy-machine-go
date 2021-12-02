@@ -8,9 +8,8 @@ import (
 )
 
 var testStr = `
-create policy RBAC(
-    create user attribute ua1;
-);
+create policy RBAC;
+create user attribute ua1;
 
 create user bob IN ua3;
 create resource resource1 IN oa1;
@@ -30,33 +29,19 @@ DO (
 );
 `
 
-func TestParse(t *testing.T) {
-	Parse(testStr)
-}
-
-func TestParseCreatePolicyClass(t *testing.T) {
-	s := `create policy RBAC (
-    		create user attribute ua1 with properties k1=v1, k2=v2 IN ua2, ua3;
-		);`
-	stmt, err := parseCreatePolicy(s)
-	require.NoError(t, err)
-
-	createPolicyStmt := stmt.(ngac.CreatePolicyStatement)
-	require.Equal(t, "RBAC", createPolicyStmt.Name)
-	require.Equal(t, 1, len(createPolicyStmt.Statements))
-	stmt = createPolicyStmt.Statements[0]
-	createUAStmt := stmt.(ngac.CreateNodeStatement)
-	require.Equal(t, "ua1", createUAStmt.Name)
-	require.Equal(t, graph.UserAttribute, createUAStmt.Kind)
-	require.Equal(t, map[string]string{"k1": "v1", "k2": "v2"}, createUAStmt.Properties)
-	require.Equal(t, []string{"ua2", "ua3"}, createUAStmt.Parents)
-}
-
 func TestParseCreateNode(t *testing.T) {
-	s := "create user u1 in ua1"
+	s := "create policy pc1"
 	stmt, err := parseCreateNode(s)
 	require.NoError(t, err)
 	nodeStmt := stmt.(ngac.CreateNodeStatement)
+	require.Equal(t, "pc1", nodeStmt.Name)
+	require.Equal(t, graph.PolicyClass, nodeStmt.Kind)
+	require.Equal(t, []string{}, nodeStmt.Parents)
+
+	s = "create user u1 in ua1"
+	stmt, err = parseCreateNode(s)
+	require.NoError(t, err)
+	nodeStmt = stmt.(ngac.CreateNodeStatement)
 	require.Equal(t, "u1", nodeStmt.Name)
 	require.Equal(t, graph.User, nodeStmt.Kind)
 	require.Equal(t, []string{"ua1"}, nodeStmt.Parents)
@@ -173,7 +158,7 @@ func my_func(arg1, arg2) {
 	function, ok := functions["my_func"]
 	require.True(t, ok)
 	require.Equal(t, "my_func", function.Name)
-	require.Equal(t, []string{"arg1", "arg2"}, function.Args)
+	require.Equal(t, map[string]bool{"arg1": true, "arg2": true}, function.Args)
 	require.Equal(t, []ngac.Statement{ngac.AssignStatement{
 		Child:   "$arg1_123",
 		Parents: []string{"$arg2"},
@@ -203,25 +188,14 @@ create object attribute $x_test in $y;
 	}, stmts[0])
 
 	s = `
-create policy test_policy(
-  let x = foo;
-  let y = bar;
-  create object attribute $x_test in $y;
-);
+let x = foo;
+create policy $x_test_policy;
 `
 	stmts, _, err = Parse(s)
 	require.NoError(t, err)
 
 	expected := ngac.CreatePolicyStatement{
-		Name: "test_policy",
-		Statements: []ngac.Statement{
-			ngac.CreateNodeStatement{
-				Name:       "foo_test",
-				Kind:       graph.ObjectAttribute,
-				Properties: make(map[string]string),
-				Parents:    []string{"bar"},
-			},
-		},
+		Name: "foo_test_policy",
 	}
 
 	require.Equal(t, 1, len(stmts))

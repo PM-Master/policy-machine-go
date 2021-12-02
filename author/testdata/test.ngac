@@ -1,5 +1,8 @@
 create policy rbac(
-	create user attribute ua1 in rbac;
+	create user attribute ua1 (
+	    create user attribute ua2;
+	    create user attribute ua3;
+	);
 	create user attribute ua2 in rbac;
 
 	create object attribute oa1 in rbac;

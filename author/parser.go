@@ -46,9 +46,10 @@ func parseStatements(statements []string) ([]ngac.Statement, map[string]ParsedFu
 			err  error
 		)
 
-		if strings.HasPrefix(upperStmtStr, "CREATE POLICY") {
+		/*if strings.HasPrefix(upperStmtStr, "CREATE POLICY") {
 			stmt, err = parseCreatePolicy(stmtStr)
-		} else if strings.HasPrefix(upperStmtStr, "CREATE") {
+		} else */
+		if strings.HasPrefix(upperStmtStr, "CREATE") {
 			stmt, err = parseCreateNode(stmtStr)
 		} else if strings.HasPrefix(upperStmtStr, "OBLIGATION") {
 			obligationParser := NewObligationParser()
@@ -298,6 +299,14 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 
 	var kind graph.Kind
 	switch strings.ToUpper(kindField) {
+	case "POLICY":
+		kind = graph.PolicyClass
+		return ngac.CreateNodeStatement{
+			Name:       name,
+			Kind:       kind,
+			Properties: make(map[string]string),
+			Parents:    make([]string, 0),
+		}, nil
 	case "USER ATTRIBUTE":
 		kind = graph.UserAttribute
 	case "OBJECT ATTRIBUTE":
@@ -308,8 +317,8 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 		kind = graph.User
 	}
 
-	properties := make(map[string]string)
 	stmtStr = strings.Join(fields[endIndex:], " ")
+	properties := make(map[string]string)
 	if strings.Contains(strings.ToUpper(stmtStr), "WITH PROPERTIES") {
 		propFields := strings.Fields(stmtStr)
 		endIndex = 0
@@ -336,7 +345,7 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 	}
 
 	if !strings.HasPrefix(strings.ToUpper(stmtStr), "IN") {
-		return nil, fmt.Errorf("IN clause required for creating nodes")
+		return nil, fmt.Errorf("IN clause required for creating non policy class nodes")
 	}
 
 	// remove IN
@@ -355,24 +364,6 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 		Kind:       kind,
 		Properties: properties,
 		Parents:    parents,
-	}, nil
-}
-
-func parseCreatePolicy(stmtStr string) (ngac.Statement, error) {
-	fields := strings.Fields(stmtStr)
-	name := strings.ReplaceAll(fields[2], "(", "")
-	startIndex := strings.Index(stmtStr, "(") + 1
-	endIndex := strings.LastIndex(stmtStr, ")")
-	stmtsStr := strings.TrimSpace(stmtStr[startIndex:endIndex])
-
-	stmts, _, err := Parse(stmtsStr)
-	if err != nil {
-		return nil, err
-	}
-
-	return ngac.CreatePolicyStatement{
-		Name:       name,
-		Statements: stmts,
 	}, nil
 }
 

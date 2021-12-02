@@ -12,8 +12,7 @@ type (
 	}
 
 	CreatePolicyStatement struct {
-		Name       string
-		Statements []Statement
+		Name string
 	}
 
 	CreateNodeStatement struct {
@@ -59,13 +58,6 @@ func (c CreatePolicyStatement) Apply(fe FunctionalEntity) error {
 	err := fe.Graph().CreatePolicyClass(c.Name)
 	if err != nil {
 		return err
-	}
-
-	for _, stmt := range c.Statements {
-		err = stmt.Apply(fe)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
