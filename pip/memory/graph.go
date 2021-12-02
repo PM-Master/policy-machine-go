@@ -23,7 +23,7 @@ func NewGraph() ngac.Graph {
 	}
 }
 
-func (g memgraph) CreatePolicyClass(name string) error {
+func (g *memgraph) CreatePolicyClass(name string) error {
 	if _, ok := g.nodes[name]; ok {
 		return fmt.Errorf("name %q already exists", name)
 	}
@@ -37,7 +37,7 @@ func (g memgraph) CreatePolicyClass(name string) error {
 	return nil
 }
 
-func (g memgraph) CreateNode(name string, kind graph.Kind, properties map[string]string, parent string, parents ...string) (graph.Node, error) {
+func (g *memgraph) CreateNode(name string, kind graph.Kind, properties map[string]string, parent string, parents ...string) (graph.Node, error) {
 	if _, ok := g.nodes[name]; ok {
 		return graph.Node{}, fmt.Errorf("name %q already exists", name)
 	}
@@ -79,7 +79,7 @@ func (g memgraph) CreateNode(name string, kind graph.Kind, properties map[string
 	return node, nil
 }
 
-func (g memgraph) UpdateNode(name string, properties map[string]string) error {
+func (g *memgraph) UpdateNode(name string, properties map[string]string) error {
 	if ok, _ := g.Exists(name); !ok {
 		return fmt.Errorf("node %q does not exist", name)
 	}
@@ -91,7 +91,7 @@ func (g memgraph) UpdateNode(name string, properties map[string]string) error {
 	return nil
 }
 
-func (g memgraph) DeleteNode(name string) error {
+func (g *memgraph) DeleteNode(name string) error {
 	// delete this node's assignments
 	// return an error if this node has other nodes assigned to it still
 	if children, _ := g.GetChildren(name); len(children) > 0 {
@@ -118,12 +118,12 @@ func (g memgraph) DeleteNode(name string) error {
 	return nil
 }
 
-func (g memgraph) Exists(name string) (bool, error) {
+func (g *memgraph) Exists(name string) (bool, error) {
 	_, ok := g.nodes[name]
 	return ok, nil
 }
 
-func (g memgraph) GetNodes() (map[string]graph.Node, error) {
+func (g *memgraph) GetNodes() (map[string]graph.Node, error) {
 	nodes := make(map[string]graph.Node)
 	for _, node := range g.nodes {
 		copyNode := copyNode(node)
@@ -132,7 +132,7 @@ func (g memgraph) GetNodes() (map[string]graph.Node, error) {
 	return nodes, nil
 }
 
-func (g memgraph) GetNode(name string) (graph.Node, error) {
+func (g *memgraph) GetNode(name string) (graph.Node, error) {
 	node, ok := g.nodes[name]
 	if !ok {
 		return graph.Node{}, fmt.Errorf("node %q does not exist", name)
@@ -140,7 +140,7 @@ func (g memgraph) GetNode(name string) (graph.Node, error) {
 	return copyNode(node), nil
 }
 
-func (g memgraph) Find(kind graph.Kind, properties map[string]string) (map[string]graph.Node, error) {
+func (g *memgraph) Find(kind graph.Kind, properties map[string]string) (map[string]graph.Node, error) {
 	found := make(map[string]graph.Node)
 	for _, node := range g.nodes {
 		if node.Kind != kind {
@@ -162,7 +162,7 @@ func (g memgraph) Find(kind graph.Kind, properties map[string]string) (map[strin
 	return found, nil
 }
 
-func (g memgraph) Assign(child string, parent string) error {
+func (g *memgraph) Assign(child string, parent string) error {
 	var (
 		childNode  graph.Node
 		parentNode graph.Node
@@ -188,12 +188,12 @@ func (g memgraph) Assign(child string, parent string) error {
 	return nil
 }
 
-func (g memgraph) Deassign(child string, parent string) error {
+func (g *memgraph) Deassign(child string, parent string) error {
 	delete(g.assignments[child], parent)
 	return nil
 }
 
-func (g memgraph) GetChildren(name string) (map[string]graph.Node, error) {
+func (g *memgraph) GetChildren(name string) (map[string]graph.Node, error) {
 	children := make(map[string]graph.Node)
 	for nodeName, assignmentMap := range g.assignments {
 		if assignmentMap[name] {
@@ -204,7 +204,7 @@ func (g memgraph) GetChildren(name string) (map[string]graph.Node, error) {
 	return children, nil
 }
 
-func (g memgraph) GetParents(name string) (map[string]graph.Node, error) {
+func (g *memgraph) GetParents(name string) (map[string]graph.Node, error) {
 	assignments := g.assignments[name]
 	parents := make(map[string]graph.Node)
 	for nodeName := range assignments {
@@ -214,7 +214,7 @@ func (g memgraph) GetParents(name string) (map[string]graph.Node, error) {
 	return parents, nil
 }
 
-func (g memgraph) GetAssignments() (map[string]map[string]bool, error) {
+func (g *memgraph) GetAssignments() (map[string]map[string]bool, error) {
 	assignments := make(map[string]map[string]bool)
 	for child, parents := range g.assignments {
 		retParents := make(map[string]bool)
@@ -232,7 +232,7 @@ func (g memgraph) GetAssignments() (map[string]map[string]bool, error) {
 	return assignments, nil
 }
 
-func (g memgraph) Associate(subject string, target string, operations graph.Operations) error {
+func (g *memgraph) Associate(subject string, target string, operations graph.Operations) error {
 	var (
 		subjectNode graph.Node
 		targetNode  graph.Node
@@ -258,12 +258,12 @@ func (g memgraph) Associate(subject string, target string, operations graph.Oper
 	return nil
 }
 
-func (g memgraph) Dissociate(subject string, target string) error {
+func (g *memgraph) Dissociate(subject string, target string) error {
 	delete(g.associations[subject], target)
 	return nil
 }
 
-func (g memgraph) GetAssociationsForSubject(subject string) (map[string]graph.Operations, error) {
+func (g *memgraph) GetAssociationsForSubject(subject string) (map[string]graph.Operations, error) {
 	retAssocs := make(map[string]graph.Operations)
 	assocs := g.associations[subject]
 	for target, ops := range assocs {
@@ -272,7 +272,7 @@ func (g memgraph) GetAssociationsForSubject(subject string) (map[string]graph.Op
 	return retAssocs, nil
 }
 
-func (g memgraph) GetAssociations() (map[string]map[string]graph.Operations, error) {
+func (g *memgraph) GetAssociations() (map[string]map[string]graph.Operations, error) {
 	assocs := make(map[string]map[string]graph.Operations)
 	for subject, subjectAssocs := range g.associations {
 		retAssocs := make(map[string]graph.Operations)
@@ -292,7 +292,7 @@ type jsonGraph struct {
 	Associations map[string]map[string]graph.Operations `json:"associations"`
 }
 
-func (g memgraph) MarshalJSON() ([]byte, error) {
+func (g *memgraph) MarshalJSON() ([]byte, error) {
 	var err error
 	jg := jsonGraph{
 		Nodes:        make(map[string]graph.Node),
