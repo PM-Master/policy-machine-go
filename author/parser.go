@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/ngac"
 	"github.com/PM-Master/policy-machine-go/ngac/graph"
-	strings "strings"
+	"strings"
 )
 
 type ParsedFunction struct {
@@ -58,7 +58,7 @@ func parseStatements(statements []string) ([]ngac.Statement, map[string]ParsedFu
 				return nil, nil, fmt.Errorf("error parsing obligation: %w", err)
 			}
 
-			stmt = ngac.ObligationStatement{Obligation: o}
+			stmt = &ngac.ObligationStatement{Obligation: o}
 		} else if strings.HasPrefix(upperStmtStr, "ASSIGN") {
 			stmt, err = parseAssign(stmtStr)
 		} else if strings.HasPrefix(upperStmtStr, "DEASSIGN") {
@@ -186,7 +186,7 @@ func parseDeny(stmtStr string) (ngac.Statement, error) {
 		containers = append(containers, s)
 	}
 
-	return ngac.DenyStatement{
+	return &ngac.DenyStatement{
 		Subject:      subject,
 		Operations:   ops,
 		Intersection: inter,
@@ -223,7 +223,7 @@ func parseGrant(stmtStr string) (ngac.Statement, error) {
 	fields = strings.Fields(stmtStr)
 	target := fields[1]
 
-	return ngac.GrantStatement{
+	return &ngac.GrantStatement{
 		Uattr:      uattr,
 		Target:     target,
 		Operations: ops,
@@ -233,7 +233,7 @@ func parseGrant(stmtStr string) (ngac.Statement, error) {
 func parseDelete(stmtStr string) (ngac.Statement, error) {
 	fields := strings.Fields(stmtStr)
 	target := fields[2]
-	return ngac.DeleteNodeStatement{
+	return &ngac.DeleteNodeStatement{
 		Name: target,
 	}, nil
 }
@@ -252,7 +252,7 @@ func parseDeassign(stmtStr string) (ngac.Statement, error) {
 		parents = append(parents, s)
 	}
 
-	return ngac.DeassignStatement{
+	return &ngac.DeassignStatement{
 		Child:   child,
 		Parents: parents,
 	}, nil
@@ -272,7 +272,7 @@ func parseAssign(stmtStr string) (ngac.Statement, error) {
 		parents = append(parents, s)
 	}
 
-	return ngac.AssignStatement{
+	return &ngac.AssignStatement{
 		Child:   child,
 		Parents: parents,
 	}, nil
@@ -301,7 +301,7 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 	switch strings.ToUpper(kindField) {
 	case "POLICY":
 		kind = graph.PolicyClass
-		return ngac.CreateNodeStatement{
+		return &ngac.CreateNodeStatement{
 			Name:       name,
 			Kind:       kind,
 			Properties: make(map[string]string),
@@ -359,7 +359,7 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 		parents = append(parents, s)
 	}
 
-	return ngac.CreateNodeStatement{
+	return &ngac.CreateNodeStatement{
 		Name:       name,
 		Kind:       kind,
 		Properties: properties,

@@ -42,25 +42,12 @@ func TestResolveArgs(t *testing.T) {
 	t.Run("test create policy", func(t *testing.T) {
 		stmt := ngac.CreatePolicyStatement{
 			Name: "$arg1",
-			Statements: []ngac.Statement{
-				ngac.CreateNodeStatement{
-					Name:       "$arg2",
-					Kind:       graph.UserAttribute,
-					Properties: map[string]string{"k": "$arg3"},
-					Parents:    []string{"$arg4"},
-				},
-			},
 		}
 
-		resolved, err := resolveArgs(stmt, args)
+		resolved, err := resolveArgs(&stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(ngac.CreatePolicyStatement)
+		actual := resolved.(*ngac.CreatePolicyStatement)
 		require.Equal(t, "test1", actual.Name)
-
-		createNodeStmt := actual.Statements[0].(ngac.CreateNodeStatement)
-		require.Equal(t, "test2", createNodeStmt.Name)
-		require.Equal(t, "test3", createNodeStmt.Properties["k"])
-		require.Equal(t, []string{"test4"}, createNodeStmt.Parents)
 	})
 
 	t.Run("test create node", func(t *testing.T) {
@@ -71,9 +58,9 @@ func TestResolveArgs(t *testing.T) {
 			Parents:    []string{"$arg1", "$arg4"},
 		}
 
-		resolved, err := resolveArgs(stmt, args)
+		resolved, err := resolveArgs(&stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(ngac.CreateNodeStatement)
+		actual := resolved.(*ngac.CreateNodeStatement)
 		require.Equal(t, "test2", actual.Name)
 		require.Equal(t, "test3", actual.Properties["k"])
 		require.Equal(t, []string{"test1", "test4"}, actual.Parents)
@@ -85,9 +72,9 @@ func TestResolveArgs(t *testing.T) {
 			Parents: []string{"$arg2", "$arg4"},
 		}
 
-		resolved, err := resolveArgs(stmt, args)
+		resolved, err := resolveArgs(&stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(ngac.AssignStatement)
+		actual := resolved.(*ngac.AssignStatement)
 		require.Equal(t, "test1", actual.Child)
 		require.Equal(t, []string{"test2", "test4"}, actual.Parents)
 	})
@@ -98,9 +85,9 @@ func TestResolveArgs(t *testing.T) {
 			Parents: []string{"$arg2", "$arg4"},
 		}
 
-		resolved, err := resolveArgs(stmt, args)
+		resolved, err := resolveArgs(&stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(ngac.DeassignStatement)
+		actual := resolved.(*ngac.DeassignStatement)
 		require.Equal(t, "test1", actual.Child)
 		require.Equal(t, []string{"test2", "test4"}, actual.Parents)
 	})
@@ -110,9 +97,9 @@ func TestResolveArgs(t *testing.T) {
 			Name: "$arg1",
 		}
 
-		resolved, err := resolveArgs(stmt, args)
+		resolved, err := resolveArgs(&stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(ngac.DeleteNodeStatement)
+		actual := resolved.(*ngac.DeleteNodeStatement)
 		require.Equal(t, "test1", actual.Name)
 	})
 
@@ -122,9 +109,9 @@ func TestResolveArgs(t *testing.T) {
 			Target: "$arg2",
 		}
 
-		resolved, err := resolveArgs(stmt, args)
+		resolved, err := resolveArgs(&stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(ngac.GrantStatement)
+		actual := resolved.(*ngac.GrantStatement)
 		require.Equal(t, "test1", actual.Uattr)
 		require.Equal(t, "test2", actual.Target)
 	})
@@ -137,9 +124,9 @@ func TestResolveArgs(t *testing.T) {
 			Containers:   []string{"!$arg2", "$arg3"},
 		}
 
-		resolved, err := resolveArgs(stmt, args)
+		resolved, err := resolveArgs(&stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(ngac.DenyStatement)
+		actual := resolved.(*ngac.DenyStatement)
 		require.Equal(t, "test1", actual.Subject)
 		require.Equal(t, []string{"!test2", "test3"}, actual.Containers)
 	})
@@ -156,7 +143,7 @@ func TestResolveArgs(t *testing.T) {
 				},
 				Response: ngac.ResponsePattern{
 					Actions: []ngac.Statement{
-						ngac.CreateNodeStatement{
+						&ngac.CreateNodeStatement{
 							Name:       "$arg2",
 							Kind:       graph.UserAttribute,
 							Properties: map[string]string{"k": "$arg3"},
@@ -167,12 +154,12 @@ func TestResolveArgs(t *testing.T) {
 			},
 		}
 
-		resolved, err := resolveArgs(stmt, args)
+		resolved, err := resolveArgs(&stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(ngac.ObligationStatement)
+		actual := resolved.(*ngac.ObligationStatement)
 		require.Equal(t, "myObl_test1", actual.Obligation.Label)
 
-		createNodeStmt := actual.Obligation.Response.Actions[0].(ngac.CreateNodeStatement)
+		createNodeStmt := actual.Obligation.Response.Actions[0].(*ngac.CreateNodeStatement)
 		require.Equal(t, "test2", createNodeStmt.Name)
 		require.Equal(t, "test3", createNodeStmt.Properties["k"])
 		require.Equal(t, []string{"test1", "test4"}, createNodeStmt.Parents)

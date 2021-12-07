@@ -63,10 +63,10 @@ func (e epp) ProcessEvent(eventCtx EventContext) error {
 func resolveArgs(stmt ngac.Statement, args map[string]string) (ngac.Statement, error) {
 	var err error
 
-	if createPCStmt, ok := stmt.(ngac.CreatePolicyStatement); ok {
+	if createPCStmt, ok := stmt.(*ngac.CreatePolicyStatement); ok {
 		createPCStmt.Name = replaceArgs(createPCStmt.Name, args)
 		return createPCStmt, nil
-	} else if createNodeStmt, ok := stmt.(ngac.CreateNodeStatement); ok {
+	} else if createNodeStmt, ok := stmt.(*ngac.CreateNodeStatement); ok {
 		createNodeStmt.Name = replaceArgs(createNodeStmt.Name, args)
 
 		// resolve properties
@@ -78,31 +78,31 @@ func resolveArgs(stmt ngac.Statement, args map[string]string) (ngac.Statement, e
 		createNodeStmt.Parents = resolveSlice(createNodeStmt.Parents, args)
 
 		return createNodeStmt, nil
-	} else if assignStmt, ok := stmt.(ngac.AssignStatement); ok {
+	} else if assignStmt, ok := stmt.(*ngac.AssignStatement); ok {
 		assignStmt.Child = replaceArgs(assignStmt.Child, args)
 		assignStmt.Parents = resolveSlice(assignStmt.Parents, args)
 
 		return assignStmt, nil
-	} else if deassignStmt, ok := stmt.(ngac.DeassignStatement); ok {
+	} else if deassignStmt, ok := stmt.(*ngac.DeassignStatement); ok {
 		deassignStmt.Child = replaceArgs(deassignStmt.Child, args)
 		deassignStmt.Parents = resolveSlice(deassignStmt.Parents, args)
 
 		return deassignStmt, nil
-	} else if deleteNodeStmt, ok := stmt.(ngac.DeleteNodeStatement); ok {
+	} else if deleteNodeStmt, ok := stmt.(*ngac.DeleteNodeStatement); ok {
 		deleteNodeStmt.Name = replaceArgs(deleteNodeStmt.Name, args)
 
 		return deleteNodeStmt, nil
-	} else if grantStmt, ok := stmt.(ngac.GrantStatement); ok {
+	} else if grantStmt, ok := stmt.(*ngac.GrantStatement); ok {
 		grantStmt.Uattr = replaceArgs(grantStmt.Uattr, args)
 		grantStmt.Target = replaceArgs(grantStmt.Target, args)
 
 		return grantStmt, nil
-	} else if denyStmt, ok := stmt.(ngac.DenyStatement); ok {
+	} else if denyStmt, ok := stmt.(*ngac.DenyStatement); ok {
 		denyStmt.Subject = replaceArgs(denyStmt.Subject, args)
 		denyStmt.Containers = resolveSlice(denyStmt.Containers, args)
 
 		return denyStmt, nil
-	} else if oblStmt, ok := stmt.(ngac.ObligationStatement); ok {
+	} else if oblStmt, ok := stmt.(*ngac.ObligationStatement); ok {
 		oblStmt.Obligation.Label = replaceArgs(oblStmt.Obligation.Label, args)
 		oblStmt.Obligation.Response.Actions, err = resolveStatements(oblStmt.Obligation.Response.Actions, args)
 		if err != nil {

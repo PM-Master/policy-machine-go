@@ -2,7 +2,6 @@ package tests
 
 import (
 	"github.com/PM-Master/policy-machine-go/ngac"
-	"github.com/PM-Master/policy-machine-go/ngac/graph"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -10,8 +9,7 @@ import (
 
 func TestCreatePolicyClassStatement(t *testing.T) {
 	stmt := ngac.CreatePolicyStatement{
-		Name:       "testpc",
-		Statements: make([]ngac.Statement, 0),
+		Name: "testpc",
 	}
 
 	pip := memory.NewPIP()
@@ -25,14 +23,6 @@ func TestCreatePolicyClassStatement(t *testing.T) {
 func TestCreatePolicyClassStatementWithStatements(t *testing.T) {
 	stmt := ngac.CreatePolicyStatement{
 		Name: "testpc",
-		Statements: []ngac.Statement{
-			ngac.CreateNodeStatement{
-				Name:       "ua1",
-				Kind:       graph.UserAttribute,
-				Properties: nil,
-				Parents:    []string{"testpc"},
-			},
-		},
 	}
 
 	pip := memory.NewPIP()
