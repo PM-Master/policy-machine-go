@@ -31,7 +31,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(subjectProhibitions))
 	prohibition := subjectProhibitions[0]
-	require.Equal(t, "test", prohibition.Subject)
+	require.Equal(t, "subject1", prohibition.Subject)
 	require.Equal(t, map[string]bool{"cont1": false, "cont2": true}, prohibition.Containers)
 	require.Equal(t, graph.ToOps("read", "write"), prohibition.Operations)
 	require.True(t, prohibition.Intersection)

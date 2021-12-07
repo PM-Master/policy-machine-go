@@ -140,7 +140,7 @@ func resolveSlice(slice []string, args map[string]string) []string {
 func replaceArgs(str string, args map[string]string) string {
 	for arg, value := range args {
 		if strings.Contains(str, arg) {
-			str = strings.ReplaceAll(str, arg, value)
+			str = strings.ReplaceAll(str, fmt.Sprintf("$%s", arg), value)
 		}
 	}
 

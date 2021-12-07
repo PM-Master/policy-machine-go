@@ -31,10 +31,4 @@ func TestCreatePolicyClassStatementWithStatements(t *testing.T) {
 	exists, err := pip.Graph().Exists("testpc")
 	require.NoError(t, err)
 	require.True(t, exists)
-	exists, err = pip.Graph().Exists("ua1")
-	require.NoError(t, err)
-	require.True(t, exists)
-	parents, err := pip.Graph().GetParents("ua1")
-	require.NoError(t, err)
-	require.Contains(t, parents, "testpc")
 }

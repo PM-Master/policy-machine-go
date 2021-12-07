@@ -180,7 +180,7 @@ create object attribute $x_test in $y;
 	stmts, _, err := Parse(s)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(stmts))
-	require.Equal(t, ngac.CreateNodeStatement{
+	require.Equal(t, &ngac.CreateNodeStatement{
 		Name:       "foo_test",
 		Kind:       graph.ObjectAttribute,
 		Properties: make(map[string]string),
@@ -194,8 +194,11 @@ create policy $x_test_policy;
 	stmts, _, err = Parse(s)
 	require.NoError(t, err)
 
-	expected := ngac.CreatePolicyStatement{
-		Name: "foo_test_policy",
+	expected := &ngac.CreateNodeStatement{
+		Name:       "foo_test_policy",
+		Kind:       graph.PolicyClass,
+		Properties: map[string]string{},
+		Parents:    []string{},
 	}
 
 	require.Equal(t, 1, len(stmts))

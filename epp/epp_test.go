@@ -33,10 +33,10 @@ func TestMatches(t *testing.T) {
 
 func TestResolveArgs(t *testing.T) {
 	args := map[string]string{
-		"$arg1": "test1",
-		"$arg2": "test2",
-		"$arg3": "test3",
-		"$arg4": "test4",
+		"arg1": "test1",
+		"arg2": "test2",
+		"arg3": "test3",
+		"arg4": "test4",
 	}
 
 	t.Run("test create policy", func(t *testing.T) {
