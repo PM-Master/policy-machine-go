@@ -46,16 +46,26 @@ func (m *memobligations) All() ([]ngac.Obligation, error) {
 }
 
 func (m *memobligations) MarshalJSON() ([]byte, error) {
-	return json.Marshal(m.obligations)
+	obligations := make([]ngac.Obligation, 0)
+	for _, obligation := range m.obligations {
+		obligations = append(obligations, obligation)
+	}
+
+	return json.Marshal(obligations)
 }
 
 func (m *memobligations) UnmarshalJSON(bytes []byte) error {
-	obligations := make(map[string]ngac.Obligation)
-	if err := json.Unmarshal(bytes, &obligations); err != nil {
+	obligationsArr := make([]ngac.Obligation, 0)
+	if err := json.Unmarshal(bytes, &obligationsArr); err != nil {
 		return err
 	}
 
-	m.obligations = obligations
+	obligationsMap := make(map[string]ngac.Obligation)
+	for _, obligation := range obligationsArr {
+		obligationsMap[obligation.Label] = obligation
+	}
+
+	m.obligations = obligationsMap
 
 	return nil
 }
