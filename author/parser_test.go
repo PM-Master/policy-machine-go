@@ -89,6 +89,14 @@ func TestParseCreateNode(t *testing.T) {
 	require.Equal(t, map[string]string{"k1": "v1", "k2": "v2"}, nodeStmt.Properties)
 }
 
+func TestParseDeleteNode(t *testing.T) {
+	s := "delete test_node"
+	stmt, err := parseDelete(s)
+	require.NoError(t, err)
+	nodeStmt := stmt.(*ngac.DeleteNodeStatement)
+	require.Equal(t, "test_node", nodeStmt.Name)
+}
+
 func TestParseDeny(t *testing.T) {
 	s := "deny ua1 read, write on !oa1, oa2"
 	stmt, err := parseDeny(s)

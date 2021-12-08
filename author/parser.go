@@ -232,7 +232,7 @@ func parseGrant(stmtStr string) (ngac.Statement, error) {
 
 func parseDelete(stmtStr string) (ngac.Statement, error) {
 	fields := strings.Fields(stmtStr)
-	target := fields[2]
+	target := fields[1]
 	return &ngac.DeleteNodeStatement{
 		Name: target,
 	}, nil
