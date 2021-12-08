@@ -82,8 +82,8 @@ func (e eventParser) Parse(event string) (ngac.EventPattern, error) {
 
 	subject := fields[1]
 
-	index := 3
-	for index = range fields {
+	var index int
+	for index = 3; index < len(fields); index++ {
 		if strings.HasPrefix(strings.ToUpper(fields[index]), On) {
 			break
 		}
@@ -95,8 +95,11 @@ func (e eventParser) Parse(event string) (ngac.EventPattern, error) {
 		return ngac.EventPattern{}, fmt.Errorf("error parsing performs clause: %w", err)
 	}
 
-	on := fields[index+1:]
-	containers := e.parseOn(strings.Join(on, " "))
+	containers := make([]string, 0)
+	if index < len(fields) {
+		on := fields[index+1:]
+		containers = e.parseOn(strings.Join(on, " "))
+	}
 
 	return ngac.EventPattern{
 		Subject:    subject,
