@@ -369,44 +369,29 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 
 func splitStatements(pal string) []string {
 	stmts := make([]string, 0)
-	stmt := ""
+	split := strings.Split(pal, ";")
 	parenCounter := 0
-	fields := strings.Fields(pal)
-	isFunc := false
-	for _, f := range fields {
-		stmt = fmt.Sprintf("%v %v", stmt, f)
-		if strings.HasPrefix(f, "func") {
-			isFunc = true
+	stmt := ""
+	for _, s := range split {
+		// add the semi colon back which will help with obligation sub statements
+		s = strings.TrimSpace(s) + ";"
+		if len(s) == 1 {
+			continue
 		}
 
-		addStmt := func() {
-			stmts = append(stmts, stmt)
-			stmt = ""
-		}
+		stmt += s
 
-		if isFunc {
-			if strings.Contains(f, "}") {
-				isFunc = false
-				addStmt()
-			} else {
-				continue
-			}
-		}
-
-		if strings.Contains(f, ";") {
-			if strings.Contains(f, ")") {
+		for _, c := range s {
+			if c == '(' {
+				parenCounter++
+			} else if c == ')' {
 				parenCounter--
 			}
+		}
 
-			if parenCounter != 0 {
-				continue
-			}
-
-			addStmt()
-		} else if strings.Contains(f, "(") {
-			parenCounter++
-		} else if strings.Contains(f, ")") {
-			parenCounter--
+		if parenCounter == 0 {
+			stmts = append(stmts, stmt)
+			stmt = ""
 		}
 	}
 

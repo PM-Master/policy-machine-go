@@ -1,0 +1,71 @@
+let BlossomObject = blossom_object;
+let BlossomOA = blossom_OA;
+let BlossomAdminUser = super:BlossomMSP;
+let BlossomAdminUA = super:BlossomMSP_UA;
+
+create policy super;
+    # super policy
+    create user attribute $BlossomAdminUA in super;
+    create user $BlossomAdminUser in $BlossomAdminUA;
+
+    create object attribute $BlossomOA in super;
+    create object $BlossomObject in $BlossomOA;
+
+    grant $BlossomAdminUA * on $BlossomOA;
+
+#obligations
+obligation request_account
+when ANY_USER
+performs request_account(account_name, sysOwner, sysAdmin, acqSpec)
+do (
+    # rbac policy
+    create policy RBAC;
+        #UA
+        create user attribute RBAC_UA in RBAC;
+        create user attribute Account_UA in RBAC_UA;
+        create user attribute SystemOwner in RBAC_UA;
+        create user attribute SystemAdministrator in RBAC_UA;
+        create user attribute AcquisitionSpecialist in RBAC_UA;
+        create user attribute Approvers in RBAC_UA;
+        assign $BlossomAdminUser to Approvers;
+
+        obligation request_account2
+        when ANY_USER
+        performs request_account2(account_name, sysOwner, sysAdmin, acqSpec)
+        do (
+            # rbac policy
+            create policy RBAC;
+                #UA
+                create user attribute RBAC_UA in RBAC;
+        );
+);
+
+obligation set_account_active
+when ANY_USER
+performs set_account_active(account)
+do (
+    let ua = $account_UA;
+    deassign $ua from pending;
+    deassign $ua from inactive;
+    assign $ua to active;
+);
+
+obligation set_account_pending
+when ANY_USER
+performs set_account_pending(account)
+do (
+    let ua = $account_UA;
+    assign $ua to pending;
+    deassign $ua from inactive;
+    deassign $ua from active;
+);
+
+obligation set_account_inactive
+when ANY_USER
+performs set_account_inactive(account)
+do (
+    let ua = $account_UA;
+    deassign $ua from pending;
+    assign $ua to inactive;
+    deassign $ua from active;
+);

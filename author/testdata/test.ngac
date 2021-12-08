@@ -7,16 +7,3 @@ create policy rbac;
 
 	grant ua1 read on oa1;
 	grant ua1 read, write on oa2;
-
-func my_function1(arg1, arg2) {
-    create object attribute $arg1 in rbac;
-    create object attribute $arg2_test in rbac;
-}
-
-func my_function2() {
-    create object attribute oa1 in rbac;
-}
-
-func my_function3(arg1) {
-    create object attribute $arg1 in rbac;
-}

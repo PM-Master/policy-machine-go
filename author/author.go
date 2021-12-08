@@ -7,22 +7,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
-type (
-	Function struct {
-		Name string
-		Args []string
-		Exec func(fe ngac.FunctionalEntity) error
-	}
-
-	Author struct {
-		fe        ngac.FunctionalEntity
-		pals      []string
-		functions map[string]ParsedFunction
-	}
-)
+type Author struct {
+	fe   ngac.FunctionalEntity
+	pals []string
+}
 
 func New(fe ngac.FunctionalEntity) Author {
 	return Author{fe: fe}
@@ -51,7 +41,6 @@ func (a *Author) ReadPAL(path string) error {
 		files = append(files, path)
 	}
 
-	functions := make(map[string]ParsedFunction)
 	pals := make([]string, 0)
 	for _, fileName := range files {
 		var pal []byte
@@ -60,24 +49,9 @@ func (a *Author) ReadPAL(path string) error {
 		}
 
 		pals = append(pals, string(pal))
-
-		// parse functions
-		_, parsedFunctions, err := Parse(string(pal))
-		if err != nil {
-			return err
-		}
-
-		for _, function := range parsedFunctions {
-			if _, ok := functions[function.Name]; ok {
-				return fmt.Errorf("function with name %q already exists", function.Name)
-			}
-
-			functions[function.Name] = function
-		}
 	}
 
 	a.pals = pals
-	a.functions = functions
 
 	return nil
 }
@@ -94,43 +68,6 @@ func (a Author) Apply() error {
 			if err != nil {
 				return fmt.Errorf("error applying statement: %w", err)
 			}
-		}
-	}
-
-	return nil
-}
-
-func (a Author) Exec(fe ngac.FunctionalEntity, funcName string, args map[string]string) error {
-	function, ok := a.functions[funcName]
-	if !ok {
-		return fmt.Errorf("function %q does not exist", funcName)
-	}
-
-	if len(function.Args) != len(args) {
-		return fmt.Errorf("expected %d args for function %q but recevied %d",
-			len(function.Args), function.Name, len(args))
-	}
-
-	for arg := range args {
-		if !function.Args[arg] {
-			return fmt.Errorf("unknown arg %q", arg)
-		}
-	}
-
-	stmtsStr := function.Stmts
-	for argName, argValue := range args {
-		argName = fmt.Sprintf("$%s", argName)
-		stmtsStr = strings.ReplaceAll(stmtsStr, argName, argValue)
-	}
-
-	stmts, _, err := Parse(stmtsStr)
-	if err != nil {
-		return err
-	}
-
-	for _, stmt := range stmts {
-		if err := stmt.Apply(fe); err != nil {
-			return err
 		}
 	}
 

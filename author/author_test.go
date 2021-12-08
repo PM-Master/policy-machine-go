@@ -1,7 +1,6 @@
 package author
 
 import (
-	"github.com/PM-Master/policy-machine-go/ngac/graph"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -38,17 +37,13 @@ func TestApply(t *testing.T) {
 	parents, err = pip.Graph().GetParents("oa2")
 	require.NoError(t, err)
 	require.Contains(t, parents, "rbac")
+}
 
-	err = author.Exec(pip, "my_function1", map[string]string{"arg1": "my_arg1", "arg2": "my_arg2"})
+func TestGraphAndObligations(t *testing.T) {
+	pip := memory.NewPIP()
+	author := New(pip)
+	err := author.ReadPAL("testdata/test2.ngac")
 	require.NoError(t, err)
-
-	children, err := pip.Graph().GetChildren("rbac")
+	err = author.Apply()
 	require.NoError(t, err)
-	node := children["my_arg1"]
-	require.Equal(t, "my_arg1", node.Name)
-	require.Equal(t, graph.ObjectAttribute, node.Kind)
-
-	node = children["my_arg2_test"]
-	require.Equal(t, "my_arg2_test", node.Name)
-	require.Equal(t, graph.ObjectAttribute, node.Kind)
 }
