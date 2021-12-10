@@ -153,7 +153,7 @@ func TestWithComments(t *testing.T) {
 	require.Equal(t, 1, len(stmts))
 }
 
-func TestParseFunction(t *testing.T) {
+/*func TestParseFunction(t *testing.T) {
 	s := `
 func my_func(arg1, arg2) {
   assign $arg1_123 to $arg2;
@@ -171,7 +171,7 @@ func my_func(arg1, arg2) {
 		Child:   "$arg1_123",
 		Parents: []string{"$arg2"},
 	}}, function.Stmts)
-}
+}*/
 
 func TestResolveVars(t *testing.T) {
 	s := "$arg1 world, this is a $arg2"
