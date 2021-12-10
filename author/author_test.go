@@ -1,17 +1,18 @@
 package author
 
 import (
+	"fmt"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 )
 
 func TestApply(t *testing.T) {
 	pip := memory.NewPIP()
 	author := New(pip)
-	err := author.ReadPAL("testdata")
-	require.NoError(t, err)
-	err = author.Apply()
+	fmt.Println(os.Getwd())
+	err := author.ReadAndApply("testdata/test.ngac")
 	require.NoError(t, err)
 
 	nodes, err := pip.Graph().GetNodes()
@@ -42,8 +43,6 @@ func TestApply(t *testing.T) {
 func TestGraphAndObligations(t *testing.T) {
 	pip := memory.NewPIP()
 	author := New(pip)
-	err := author.ReadPAL("testdata/test2.ngac")
-	require.NoError(t, err)
-	err = author.Apply()
+	err := author.ReadAndApply("testdata/test2.ngac")
 	require.NoError(t, err)
 }
