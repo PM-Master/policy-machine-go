@@ -2,10 +2,8 @@ package author
 
 import (
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -18,31 +16,13 @@ func GenerateFunctionsStub(name string, inputPath string, outputPath string) err
 		return err
 	}
 
-	files := make([]string, 0)
-
 	if fileInfo.IsDir() {
-		if err := filepath.WalkDir(fileInfo.Name(), func(path string, d fs.DirEntry, err error) error {
-			if d.IsDir() {
-				return nil
-			}
-
-			files = append(files, path)
-			return nil
-		}); err != nil {
-			return fmt.Errorf("error loading PAL files: %w", err)
-		}
-	} else {
-		files = append(files, fileInfo.Name())
+		return fmt.Errorf("recevied directory path, expected .ngac file")
 	}
 
-	pals := make([]string, 0)
-	for _, fileName := range files {
-		var pal []byte
-		if pal, err = ioutil.ReadFile(fileName); err != nil {
-			return fmt.Errorf("error reading file %q: %w", fileName, err)
-		}
-
-		pals = append(pals, string(pal))
+	var pal []byte
+	if pal, err = ioutil.ReadFile(inputPath); err != nil {
+		return fmt.Errorf("error reading file %q: %w", fileInfo.Name(), err)
 	}
 
 	outputFile, err := os.OpenFile(outputPath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
@@ -52,15 +32,13 @@ func GenerateFunctionsStub(name string, inputPath string, outputPath string) err
 	defer outputFile.Close()
 
 	s := initStub(name)
-	for _, pal := range pals {
-		_, functions, err := Parse(pal)
-		if err != nil {
-			return fmt.Errorf("error parsing policy author language: %w", err)
-		}
+	_, functions, err := Parse(string(pal))
+	if err != nil {
+		return fmt.Errorf("error parsing policy author language: %w", err)
+	}
 
-		for _, function := range functions {
-			s = fmt.Sprintf("%s\n%s", s, generateFunctionStub(name, function))
-		}
+	for _, function := range functions {
+		s = fmt.Sprintf("%s\n%s", s, generateFunctionStub(name, function))
 	}
 
 	_, err = outputFile.WriteString(s)
