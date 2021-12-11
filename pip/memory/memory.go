@@ -10,7 +10,7 @@ type mempip struct {
 	obligations  policy.Obligations
 }
 
-func NewStore() policy.Store {
+func NewPolicyStore() policy.Store {
 	return mempip{
 		graph:        NewGraph(),
 		prohibitions: NewProhibitions(),

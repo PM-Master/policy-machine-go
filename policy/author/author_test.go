@@ -11,7 +11,7 @@ import (
 )
 
 func TestAuthor(t *testing.T) {
-	pip := memory.NewStore()
+	pip := memory.NewPolicyStore()
 	author := New(pip)
 	err := author.Exec(
 		PolicyClass("pc1"),
@@ -63,7 +63,7 @@ func TestAuthor(t *testing.T) {
 }
 
 func TestApply(t *testing.T) {
-	pip := memory.NewStore()
+	pip := memory.NewPolicyStore()
 	author := New(pip)
 	fmt.Println(os.Getwd())
 	err := author.ReadAndApply("testdata/test.ngac")
