@@ -7,22 +7,9 @@ import (
 	"os"
 )
 
-type (
-	Author struct {
-		policyStore policy.Store
-		pal         string
-	}
+type Properties map[string]string
 
-	Properties map[string]string
-)
-
-func New(store policy.Store) Author {
-	return Author{
-		policyStore: store,
-	}
-}
-
-func (a *Author) ReadAndApply(path string) error {
+func ReadAndApply(policyStore policy.Store, path string) error {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -37,19 +24,17 @@ func (a *Author) ReadAndApply(path string) error {
 		return fmt.Errorf("error reading file %q: %w", fileInfo.Name(), err)
 	}
 
-	a.pal = string(pal)
-
-	return a.apply()
+	return apply(policyStore, string(pal))
 }
 
-func (a Author) apply() error {
-	stmts, _, err := Parse(a.pal)
+func apply(policyStore policy.Store, pal string) error {
+	stmts, _, err := Parse(pal)
 	if err != nil {
 		return fmt.Errorf("error parsing policy author language: %w", err)
 	}
 
 	for _, stmt := range stmts {
-		err = stmt.Apply(a.policyStore)
+		err = stmt.Apply(policyStore)
 		if err != nil {
 			return fmt.Errorf("error applying statement: %w", err)
 		}
@@ -58,9 +43,9 @@ func (a Author) apply() error {
 	return nil
 }
 
-func (a Author) Exec(stmts ...policy.Statement) error {
+func Author(policyStore policy.Store, stmts ...policy.Statement) error {
 	for _, stmt := range stmts {
-		if err := stmt.Apply(a.policyStore); err != nil {
+		if err := stmt.Apply(policyStore); err != nil {
 			return err
 		}
 	}

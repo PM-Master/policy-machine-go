@@ -1,19 +1,23 @@
 package author
 
 import (
-	"fmt"
 	"github.com/PM-Master/policy-machine-go/epp"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/stretchr/testify/require"
-	"os"
 	"testing"
 )
 
+/**
+policy.Author
+author.Author
+policy.Author(store, s, s, s, s, s)
+author.Author(store, s, s, s, s, s)
+*/
+
 func TestAuthor(t *testing.T) {
 	pip := memory.NewPolicyStore()
-	author := New(pip)
-	err := author.Exec(
+	err := Author(pip,
 		PolicyClass("pc1"),
 		UserAttribute("ua1", "pc1"),
 		UserAttributeWithProperties("ua2", Properties{"k": "v"}, "pc1"),
@@ -64,9 +68,7 @@ func TestAuthor(t *testing.T) {
 
 func TestApply(t *testing.T) {
 	pip := memory.NewPolicyStore()
-	author := New(pip)
-	fmt.Println(os.Getwd())
-	err := author.ReadAndApply("testdata/test.ngac")
+	err := ReadAndApply(pip, "testdata/test.ngac")
 	require.NoError(t, err)
 
 	nodes, err := pip.Graph().GetNodes()
