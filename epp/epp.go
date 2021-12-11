@@ -2,7 +2,7 @@ package epp
 
 import (
 	"fmt"
-	"github.com/PM-Master/policy-machine-go/ngac"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"strings"
 )
 
@@ -19,16 +19,16 @@ type (
 	}
 
 	epp struct {
-		pap ngac.FunctionalEntity
+		policyStore policy.Store
 	}
 )
 
-func NewEPP(pap ngac.FunctionalEntity) EventProcessor {
-	return epp{pap: pap}
+func NewEPP(policyStore policy.Store) EventProcessor {
+	return epp{policyStore: policyStore}
 }
 
 func (e epp) ProcessEvent(eventCtx EventContext) error {
-	obligations, err := e.pap.Obligations().All()
+	obligations, err := e.policyStore.Obligations().All()
 	if err != nil {
 		return fmt.Errorf("error getting obligations from PAP")
 	}
@@ -50,7 +50,7 @@ func (e epp) ProcessEvent(eventCtx EventContext) error {
 				return fmt.Errorf("error resolving args: %w", err)
 			}
 
-			err = action.Apply(e.pap)
+			err = action.Apply(e.policyStore)
 			if err != nil {
 				return fmt.Errorf("error applying response action: %w", err)
 			}
@@ -60,13 +60,13 @@ func (e epp) ProcessEvent(eventCtx EventContext) error {
 	return nil
 }
 
-func resolveArgs(stmt ngac.Statement, args map[string]string) (ngac.Statement, error) {
+func resolveArgs(stmt policy.Statement, args map[string]string) (policy.Statement, error) {
 	var err error
 
-	if createPCStmt, ok := stmt.(*ngac.CreatePolicyStatement); ok {
+	if createPCStmt, ok := stmt.(*policy.CreatePolicyStatement); ok {
 		createPCStmt.Name = replaceArgs(createPCStmt.Name, args)
 		return createPCStmt, nil
-	} else if createNodeStmt, ok := stmt.(*ngac.CreateNodeStatement); ok {
+	} else if createNodeStmt, ok := stmt.(*policy.CreateNodeStatement); ok {
 		createNodeStmt.Name = replaceArgs(createNodeStmt.Name, args)
 
 		// resolve properties
@@ -78,31 +78,31 @@ func resolveArgs(stmt ngac.Statement, args map[string]string) (ngac.Statement, e
 		createNodeStmt.Parents = resolveSlice(createNodeStmt.Parents, args)
 
 		return createNodeStmt, nil
-	} else if assignStmt, ok := stmt.(*ngac.AssignStatement); ok {
+	} else if assignStmt, ok := stmt.(*policy.AssignStatement); ok {
 		assignStmt.Child = replaceArgs(assignStmt.Child, args)
 		assignStmt.Parents = resolveSlice(assignStmt.Parents, args)
 
 		return assignStmt, nil
-	} else if deassignStmt, ok := stmt.(*ngac.DeassignStatement); ok {
+	} else if deassignStmt, ok := stmt.(*policy.DeassignStatement); ok {
 		deassignStmt.Child = replaceArgs(deassignStmt.Child, args)
 		deassignStmt.Parents = resolveSlice(deassignStmt.Parents, args)
 
 		return deassignStmt, nil
-	} else if deleteNodeStmt, ok := stmt.(*ngac.DeleteNodeStatement); ok {
+	} else if deleteNodeStmt, ok := stmt.(*policy.DeleteNodeStatement); ok {
 		deleteNodeStmt.Name = replaceArgs(deleteNodeStmt.Name, args)
 
 		return deleteNodeStmt, nil
-	} else if grantStmt, ok := stmt.(*ngac.GrantStatement); ok {
+	} else if grantStmt, ok := stmt.(*policy.GrantStatement); ok {
 		grantStmt.Uattr = replaceArgs(grantStmt.Uattr, args)
 		grantStmt.Target = replaceArgs(grantStmt.Target, args)
 
 		return grantStmt, nil
-	} else if denyStmt, ok := stmt.(*ngac.DenyStatement); ok {
+	} else if denyStmt, ok := stmt.(*policy.DenyStatement); ok {
 		denyStmt.Subject = replaceArgs(denyStmt.Subject, args)
 		denyStmt.Containers = resolveSlice(denyStmt.Containers, args)
 
 		return denyStmt, nil
-	} else if oblStmt, ok := stmt.(*ngac.ObligationStatement); ok {
+	} else if oblStmt, ok := stmt.(*policy.ObligationStatement); ok {
 		oblStmt.Obligation.Label = replaceArgs(oblStmt.Obligation.Label, args)
 		oblStmt.Obligation.Response.Actions, err = resolveStatements(oblStmt.Obligation.Response.Actions, args)
 		if err != nil {
@@ -115,9 +115,9 @@ func resolveArgs(stmt ngac.Statement, args map[string]string) (ngac.Statement, e
 	}
 }
 
-func resolveStatements(statements []ngac.Statement, args map[string]string) ([]ngac.Statement, error) {
-	resolved := make([]ngac.Statement, 0)
-	for _, s := range statements {
+func resolveStatements(stmts []policy.Statement, args map[string]string) ([]policy.Statement, error) {
+	resolved := make([]policy.Statement, 0)
+	for _, s := range stmts {
 		statement, err := resolveArgs(s, args)
 		if err != nil {
 			return nil, fmt.Errorf("error resolving args: %w", err)
@@ -140,14 +140,14 @@ func resolveSlice(slice []string, args map[string]string) []string {
 func replaceArgs(str string, args map[string]string) string {
 	for arg, value := range args {
 		if strings.Contains(str, arg) {
-			str = strings.ReplaceAll(str, fmt.Sprintf("$%s", arg), value)
+			str = strings.ReplaceAll(str, fmt.Sprintf("<%s>", arg), value)
 		}
 	}
 
 	return str
 }
 
-func (e EventContext) Matches(eventPattern ngac.EventPattern) (bool, error) {
+func (e EventContext) Matches(eventPattern policy.EventPattern) (bool, error) {
 	var eventMatches bool
 	for _, patternEvent := range eventPattern.Operations {
 		if e.Event == patternEvent.Operation {
@@ -163,12 +163,12 @@ func (e EventContext) Matches(eventPattern ngac.EventPattern) (bool, error) {
 	return e.subjectMatches(e.User, eventPattern.Subject) && e.targetMatches(e.Target, eventPattern.Containers), nil
 }
 
-func (e EventContext) subjectMatches(eventUser string, patternSubject string) bool {
+func (e EventContext) subjectMatches(eventUser string, patternSubject policy.Subject) bool {
 	if patternSubject == "ANY_USER" {
 		return true
 	}
 
-	return strings.ToUpper(patternSubject) == "ANY_USER" || eventUser == patternSubject
+	return patternSubject.Equals(eventUser)
 }
 
 func (e EventContext) targetMatches(eventTarget string, patternContainers []string) bool {

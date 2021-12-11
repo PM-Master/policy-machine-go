@@ -2,20 +2,20 @@ package memory
 
 import (
 	"encoding/json"
-	"github.com/PM-Master/policy-machine-go/ngac"
+	"github.com/PM-Master/policy-machine-go/policy"
 )
 
 type memobligations struct {
-	obligations map[string]ngac.Obligation
+	obligations map[string]policy.Obligation
 }
 
-func NewObligations() ngac.Obligations {
+func NewObligations() policy.Obligations {
 	return &memobligations{
-		obligations: make(map[string]ngac.Obligation),
+		obligations: make(map[string]policy.Obligation),
 	}
 }
 
-func (m *memobligations) Add(obligation ngac.Obligation) error {
+func (m *memobligations) Add(obligation policy.Obligation) error {
 	m.obligations[obligation.Label] = obligation
 	return nil
 }
@@ -25,9 +25,9 @@ func (m *memobligations) Remove(label string) error {
 	return nil
 }
 
-func (m *memobligations) Get(label string) (ngac.Obligation, error) {
+func (m *memobligations) Get(label string) (policy.Obligation, error) {
 	o := m.obligations[label]
-	return ngac.Obligation{
+	return policy.Obligation{
 		User:     o.User,
 		Label:    o.Label,
 		Event:    o.Event,
@@ -35,8 +35,8 @@ func (m *memobligations) Get(label string) (ngac.Obligation, error) {
 	}, nil
 }
 
-func (m *memobligations) All() ([]ngac.Obligation, error) {
-	obligations := make([]ngac.Obligation, 0)
+func (m *memobligations) All() ([]policy.Obligation, error) {
+	obligations := make([]policy.Obligation, 0)
 
 	for _, obligation := range m.obligations {
 		obligations = append(obligations, obligation)
@@ -46,7 +46,7 @@ func (m *memobligations) All() ([]ngac.Obligation, error) {
 }
 
 func (m *memobligations) MarshalJSON() ([]byte, error) {
-	obligations := make([]ngac.Obligation, 0)
+	obligations := make([]policy.Obligation, 0)
 	for _, obligation := range m.obligations {
 		obligations = append(obligations, obligation)
 	}
@@ -55,12 +55,12 @@ func (m *memobligations) MarshalJSON() ([]byte, error) {
 }
 
 func (m *memobligations) UnmarshalJSON(bytes []byte) error {
-	obligationsArr := make([]ngac.Obligation, 0)
+	obligationsArr := make([]policy.Obligation, 0)
 	if err := json.Unmarshal(bytes, &obligationsArr); err != nil {
 		return err
 	}
 
-	obligationsMap := make(map[string]ngac.Obligation)
+	obligationsMap := make(map[string]policy.Obligation)
 	for _, obligation := range obligationsArr {
 		obligationsMap[obligation.Label] = obligation
 	}

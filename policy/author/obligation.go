@@ -2,21 +2,21 @@ package author
 
 import (
 	"fmt"
-	"github.com/PM-Master/policy-machine-go/ngac"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"strings"
 )
 
 type (
 	ObligationParser interface {
-		Parse(obligation string) (ngac.Obligation, error)
+		Parse(obligation string) (policy.Obligation, error)
 	}
 
 	EventParser interface {
-		Parse(event string) (ngac.EventPattern, error)
+		Parse(event string) (policy.EventPattern, error)
 	}
 
 	ResponseParser interface {
-		Parse(response string) (ngac.ResponsePattern, error)
+		Parse(response string) (policy.ResponsePattern, error)
 	}
 
 	obligationParser struct {
@@ -32,12 +32,12 @@ type (
 )
 
 const (
-	Obligation = "OBLIGATION"
-	When       = "WHEN"
-	Performs   = "PERFORMS"
-	On         = "ON"
-	Do         = "DO"
-	Or         = "OR"
+	ObligationKeyword = "OBLIGATION"
+	When              = "WHEN"
+	Performs          = "PERFORMS"
+	On                = "ON"
+	Do                = "DO"
+	Or                = "OR"
 )
 
 func NewObligationParser() ObligationParser {
@@ -47,7 +47,7 @@ func NewObligationParser() ObligationParser {
 	}
 }
 
-func (o obligationParser) Parse(obligation string) (ngac.Obligation, error) {
+func (o obligationParser) Parse(obligation string) (policy.Obligation, error) {
 	fields := strings.Fields(obligation)
 
 	label := fields[1]
@@ -61,23 +61,23 @@ func (o obligationParser) Parse(obligation string) (ngac.Obligation, error) {
 	event := strings.Join(fields[2:index], " ")
 	eventPattern, err := o.eventParser.Parse(event)
 	if err != nil {
-		return ngac.Obligation{}, fmt.Errorf("error parsing event: %w", err)
+		return policy.Obligation{}, fmt.Errorf("error parsing event: %w", err)
 	}
 
 	response := strings.Join(fields[index:], " ")
 	responsePattern, err := o.responseParser.Parse(response)
 	if err != nil {
-		return ngac.Obligation{}, fmt.Errorf("error parsing response: %w", err)
+		return policy.Obligation{}, fmt.Errorf("error parsing response: %w", err)
 	}
 
-	return ngac.Obligation{
+	return policy.Obligation{
 		Label:    label,
 		Event:    eventPattern,
 		Response: responsePattern,
 	}, nil
 }
 
-func (e eventParser) Parse(event string) (ngac.EventPattern, error) {
+func (e eventParser) Parse(event string) (policy.EventPattern, error) {
 	fields := strings.Fields(event)
 
 	subject := fields[1]
@@ -92,7 +92,7 @@ func (e eventParser) Parse(event string) (ngac.EventPattern, error) {
 	performs := fields[3:index]
 	ops, err := e.parsePerforms(strings.Join(performs, " "))
 	if err != nil {
-		return ngac.EventPattern{}, fmt.Errorf("error parsing performs clause: %w", err)
+		return policy.EventPattern{}, fmt.Errorf("error parsing performs clause: %w", err)
 	}
 
 	containers := make([]string, 0)
@@ -101,15 +101,15 @@ func (e eventParser) Parse(event string) (ngac.EventPattern, error) {
 		containers = e.parseOn(strings.Join(on, " "))
 	}
 
-	return ngac.EventPattern{
-		Subject:    subject,
+	return policy.EventPattern{
+		Subject:    policy.Subject(subject),
 		Operations: ops,
 		Containers: containers,
 	}, nil
 }
 
-func (e eventParser) parsePerforms(performs string) ([]ngac.EventOperation, error) {
-	ops := make([]ngac.EventOperation, 0)
+func (e eventParser) parsePerforms(performs string) ([]policy.EventOperation, error) {
+	ops := make([]policy.EventOperation, 0)
 	split := strings.Split(performs, Or)
 	hasArgs := false
 	for _, s := range split {
@@ -128,8 +128,8 @@ func (e eventParser) parsePerforms(performs string) ([]ngac.EventOperation, erro
 	return ops, nil
 }
 
-func (e eventParser) parseEventOperation(opStr string) ngac.EventOperation {
-	op := ngac.EventOperation{}
+func (e eventParser) parseEventOperation(opStr string) policy.EventOperation {
+	op := policy.EventOperation{}
 
 	// if the string contains a parenthesis the operation has arguments
 	if strings.Contains(opStr, "(") {
@@ -150,14 +150,14 @@ func (e eventParser) parseOn(on string) []string {
 	return strings.Fields(strings.ReplaceAll(on, ",", " "))
 }
 
-func (r responseParser) Parse(response string) (ngac.ResponsePattern, error) {
+func (r responseParser) Parse(response string) (policy.ResponsePattern, error) {
 	response = response[strings.Index(response, "(")+1 : strings.LastIndex(response, ")")]
 	statements, _, err := Parse(response)
 	if err != nil {
-		return ngac.ResponsePattern{}, err
+		return policy.ResponsePattern{}, err
 	}
 
-	return ngac.ResponsePattern{
+	return policy.ResponsePattern{
 		Actions: statements,
 	}, nil
 }

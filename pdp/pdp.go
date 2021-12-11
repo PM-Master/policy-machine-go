@@ -3,34 +3,33 @@ package pdp
 import (
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/dag"
-	"github.com/PM-Master/policy-machine-go/ngac"
-	"github.com/PM-Master/policy-machine-go/ngac/graph"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
+	"github.com/PM-Master/policy-machine-go/policy"
 )
 
 type (
 	Decider interface {
 		HasPermissions(user string, target string, permissions ...string) (bool, error)
-		ListPermissions(user string, target string) (graph.Operations, error)
+		ListPermissions(user string, target string) (policy.Operations, error)
 	}
 
 	decider struct {
-		graph        ngac.Graph
-		prohibitions ngac.Prohibitions
+		graph        policy.Graph
+		prohibitions policy.Prohibitions
 	}
 
 	userContext struct {
-		borderTargets map[string]graph.Operations
-		prohibitions  []ngac.Prohibition
+		borderTargets map[string]policy.Operations
+		prohibitions  []policy.Prohibition
 	}
 
 	targetContext struct {
-		pcSet   map[string]graph.Operations
+		pcSet   map[string]policy.Operations
 		visited map[string]bool
 	}
 )
 
-func NewDecider(graph ngac.Graph, prohibitions ngac.Prohibitions) Decider {
+func NewDecider(graph policy.Graph, prohibitions policy.Prohibitions) Decider {
 	if prohibitions == nil {
 		prohibitions = memory.NewProhibitions()
 	}
@@ -53,7 +52,7 @@ func (d decider) HasPermissions(user string, target string, permissions ...strin
 	return true, nil
 }
 
-func (d decider) ListPermissions(user string, target string) (graph.Operations, error) {
+func (d decider) ListPermissions(user string, target string) (policy.Operations, error) {
 	var (
 		userCtx   userContext
 		targetCtx targetContext
@@ -78,14 +77,14 @@ func (d decider) ListPermissions(user string, target string) (graph.Operations, 
 	return allowed, nil
 }
 
-func (d decider) userDAG(user graph.Node) (userContext, error) {
+func (d decider) userDAG(user policy.Node) (userContext, error) {
 	bfs := dag.NewBFS(d.graph)
 	userCtx := userContext{
-		borderTargets: make(map[string]graph.Operations),
-		prohibitions:  make([]ngac.Prohibition, 0),
+		borderTargets: make(map[string]policy.Operations),
+		prohibitions:  make([]policy.Prohibition, 0),
 	}
 
-	visitor := func(node graph.Node) error {
+	visitor := func(node policy.Node) error {
 		assocs, err := d.graph.GetAssociationsForSubject(node.Name)
 		if err != nil {
 			return err
@@ -103,7 +102,7 @@ func (d decider) userDAG(user graph.Node) (userContext, error) {
 		return nil
 	}
 
-	propagator := func(node graph.Node, parent graph.Node) error {
+	propagator := func(node policy.Node, parent policy.Node) error {
 		return nil
 	}
 
@@ -114,7 +113,7 @@ func (d decider) userDAG(user graph.Node) (userContext, error) {
 	return userCtx, nil
 }
 
-func (d decider) collectAssociations(assocs map[string]graph.Operations, borderTargets map[string]graph.Operations) {
+func (d decider) collectAssociations(assocs map[string]policy.Operations, borderTargets map[string]policy.Operations) {
 	for target := range assocs {
 		ops := assocs[target]
 		if exOps, ok := borderTargets[target]; ok {
@@ -127,21 +126,21 @@ func (d decider) collectAssociations(assocs map[string]graph.Operations, borderT
 	}
 }
 
-func (d decider) targetDAG(target graph.Node, userCtx userContext) (targetContext, error) {
-	foundPermissions := make(map[string]map[string]graph.Operations)
+func (d decider) targetDAG(target policy.Node, userCtx userContext) (targetContext, error) {
+	foundPermissions := make(map[string]map[string]policy.Operations)
 	visited := make(map[string]bool)
 
-	visitor := func(node graph.Node) error {
+	visitor := func(node policy.Node) error {
 		visited[node.Name] = true
 
 		nodeCtx, ok := foundPermissions[node.Name]
 		if !ok {
-			nodeCtx = make(map[string]graph.Operations)
+			nodeCtx = make(map[string]policy.Operations)
 			foundPermissions[node.Name] = nodeCtx
 		}
 
-		if node.Kind == graph.PolicyClass {
-			nodeCtx[node.Name] = make(graph.Operations)
+		if node.Kind == policy.PolicyClass {
+			nodeCtx[node.Name] = make(policy.Operations)
 		} else {
 			ops, ok := userCtx.borderTargets[node.Name]
 			if ok {
@@ -158,16 +157,16 @@ func (d decider) targetDAG(target graph.Node, userCtx userContext) (targetContex
 		return nil
 	}
 
-	propagator := func(parent graph.Node, child graph.Node) error {
+	propagator := func(parent policy.Node, child policy.Node) error {
 		parentCtx := foundPermissions[parent.Name]
 		nodeCtx, ok := foundPermissions[child.Name]
 		if !ok {
-			nodeCtx = make(map[string]graph.Operations)
+			nodeCtx = make(map[string]policy.Operations)
 		}
 		for name := range parentCtx {
 			ops, ok := nodeCtx[name]
 			if !ok {
-				ops = make(graph.Operations)
+				ops = make(policy.Operations)
 			}
 
 			parentOps := parentCtx[name]
@@ -187,7 +186,7 @@ func (d decider) targetDAG(target graph.Node, userCtx userContext) (targetContex
 	return targetContext{pcSet: foundPermissions[target.Name]}, err
 }
 
-func (d decider) resolvePermissions(userCtx userContext, targetContext targetContext, target string) graph.Operations {
+func (d decider) resolvePermissions(userCtx userContext, targetContext targetContext, target string) policy.Operations {
 	allowed := d.allowedPermissions(targetContext)
 	denied := d.deniedPermissions(userCtx, targetContext, target)
 
@@ -196,8 +195,8 @@ func (d decider) resolvePermissions(userCtx userContext, targetContext targetCon
 	return allowed
 }
 
-func (d decider) allowedPermissions(ctx targetContext) graph.Operations {
-	allowed := make(graph.Operations)
+func (d decider) allowedPermissions(ctx targetContext) policy.Operations {
+	allowed := make(policy.Operations)
 	pcSet := ctx.pcSet
 	first := true
 	for _, ops := range pcSet {
@@ -207,12 +206,12 @@ func (d decider) allowedPermissions(ctx targetContext) graph.Operations {
 			}
 			first = false
 		} else {
-			if allowed[graph.AllOps] {
-				allowed = make(graph.Operations)
+			if allowed[policy.AllOps] {
+				allowed = make(policy.Operations)
 				for op := range ops {
 					allowed[op] = true
 				}
-			} else if !ops[graph.AllOps] {
+			} else if !ops[policy.AllOps] {
 				for op := range allowed {
 					if _, ok := ops[op]; !ok {
 						delete(allowed, op)
@@ -225,8 +224,8 @@ func (d decider) allowedPermissions(ctx targetContext) graph.Operations {
 	return allowed
 }
 
-func (d decider) deniedPermissions(userCtx userContext, targetCtx targetContext, target string) graph.Operations {
-	denied := make(graph.Operations)
+func (d decider) deniedPermissions(userCtx userContext, targetCtx targetContext, target string) policy.Operations {
+	denied := make(policy.Operations)
 	visited := targetCtx.visited
 	prohibitions := userCtx.prohibitions
 

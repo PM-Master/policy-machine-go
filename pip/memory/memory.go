@@ -1,14 +1,16 @@
 package memory
 
-import "github.com/PM-Master/policy-machine-go/ngac"
+import (
+	"github.com/PM-Master/policy-machine-go/policy"
+)
 
 type mempip struct {
-	graph        ngac.Graph
-	prohibitions ngac.Prohibitions
-	obligations  ngac.Obligations
+	graph        policy.Graph
+	prohibitions policy.Prohibitions
+	obligations  policy.Obligations
 }
 
-func NewPIP() ngac.FunctionalEntity {
+func NewStore() policy.Store {
 	return mempip{
 		graph:        NewGraph(),
 		prohibitions: NewProhibitions(),
@@ -16,14 +18,14 @@ func NewPIP() ngac.FunctionalEntity {
 	}
 }
 
-func (m mempip) Graph() ngac.Graph {
+func (m mempip) Graph() policy.Graph {
 	return m.graph
 }
 
-func (m mempip) Prohibitions() ngac.Prohibitions {
+func (m mempip) Prohibitions() policy.Prohibitions {
 	return m.prohibitions
 }
 
-func (m mempip) Obligations() ngac.Obligations {
+func (m mempip) Obligations() policy.Obligations {
 	return m.obligations
 }

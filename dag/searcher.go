@@ -1,43 +1,42 @@
 package dag
 
 import (
-	"github.com/PM-Master/policy-machine-go/ngac"
-	"github.com/PM-Master/policy-machine-go/ngac/graph"
+	"github.com/PM-Master/policy-machine-go/policy"
 )
 
 type (
 	Propagator interface {
-		Propagate(node graph.Node, target graph.Node)
+		Propagate(node policy.Node, target policy.Node)
 	}
 
 	Visitor interface {
-		Visit(node graph.Node)
+		Visit(node policy.Node)
 	}
 
 	Searcher interface {
-		Traverse(start graph.Node, propagate func(node graph.Node, target graph.Node) error, visit func(node graph.Node) error) error
+		Traverse(start policy.Node, propagate func(node policy.Node, target policy.Node) error, visit func(node policy.Node) error) error
 	}
 
 	bfs struct {
-		graph ngac.Graph
+		graph policy.Graph
 	}
 
 	dfs struct {
-		graph   ngac.Graph
+		graph   policy.Graph
 		visited map[string]bool
 	}
 )
 
-func NewBFS(graph ngac.Graph) Searcher {
+func NewBFS(graph policy.Graph) Searcher {
 	return bfs{graph: graph}
 }
 
-func NewDFS(graph ngac.Graph) Searcher {
+func NewDFS(graph policy.Graph) Searcher {
 	return dfs{graph: graph, visited: make(map[string]bool)}
 }
 
-func (b bfs) Traverse(start graph.Node, propagate func(parent graph.Node, child graph.Node) error, visit func(node graph.Node) error) error {
-	queue := make([]graph.Node, 0)
+func (b bfs) Traverse(start policy.Node, propagate func(parent policy.Node, child policy.Node) error, visit func(node policy.Node) error) error {
+	queue := make([]policy.Node, 0)
 	queue = append(queue, start)
 
 	seen := make(map[string]bool)
@@ -49,7 +48,7 @@ func (b bfs) Traverse(start graph.Node, propagate func(parent graph.Node, child 
 
 		var (
 			err     error
-			parents map[string]graph.Node
+			parents map[string]policy.Node
 		)
 
 		if err = visit(node); err != nil {
@@ -77,7 +76,7 @@ func (b bfs) Traverse(start graph.Node, propagate func(parent graph.Node, child 
 	return nil
 }
 
-func (d dfs) Traverse(start graph.Node, propagate func(node graph.Node, target graph.Node) error, visit func(node graph.Node) error) error {
+func (d dfs) Traverse(start policy.Node, propagate func(node policy.Node, target policy.Node) error, visit func(node policy.Node) error) error {
 	if d.visited[start.Name] {
 		return nil
 	}

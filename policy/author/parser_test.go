@@ -1,8 +1,7 @@
 package author
 
 import (
-	"github.com/PM-Master/policy-machine-go/ngac"
-	"github.com/PM-Master/policy-machine-go/ngac/graph"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -33,58 +32,58 @@ func TestParseCreateNode(t *testing.T) {
 	s := "create policy pc1"
 	stmt, err := parseCreateNode(s)
 	require.NoError(t, err)
-	nodeStmt := stmt.(*ngac.CreateNodeStatement)
+	nodeStmt := stmt.(*policy.CreateNodeStatement)
 	require.Equal(t, "pc1", nodeStmt.Name)
-	require.Equal(t, graph.PolicyClass, nodeStmt.Kind)
+	require.Equal(t, policy.PolicyClass, nodeStmt.Kind)
 	require.Equal(t, []string{}, nodeStmt.Parents)
 
 	s = "create user u1 in ua1"
 	stmt, err = parseCreateNode(s)
 	require.NoError(t, err)
-	nodeStmt = stmt.(*ngac.CreateNodeStatement)
+	nodeStmt = stmt.(*policy.CreateNodeStatement)
 	require.Equal(t, "u1", nodeStmt.Name)
-	require.Equal(t, graph.User, nodeStmt.Kind)
+	require.Equal(t, policy.User, nodeStmt.Kind)
 	require.Equal(t, []string{"ua1"}, nodeStmt.Parents)
 
 	s = "create object o1 in oa1"
 	stmt, err = parseCreateNode(s)
 	require.NoError(t, err)
-	nodeStmt = stmt.(*ngac.CreateNodeStatement)
+	nodeStmt = stmt.(*policy.CreateNodeStatement)
 	require.Equal(t, "o1", nodeStmt.Name)
-	require.Equal(t, graph.Object, nodeStmt.Kind)
+	require.Equal(t, policy.Object, nodeStmt.Kind)
 	require.Equal(t, []string{"oa1"}, nodeStmt.Parents)
 
 	s = "create user attribute ua1 in ua2"
 	stmt, err = parseCreateNode(s)
 	require.NoError(t, err)
-	nodeStmt = stmt.(*ngac.CreateNodeStatement)
+	nodeStmt = stmt.(*policy.CreateNodeStatement)
 	require.Equal(t, "ua1", nodeStmt.Name)
-	require.Equal(t, graph.UserAttribute, nodeStmt.Kind)
+	require.Equal(t, policy.UserAttribute, nodeStmt.Kind)
 	require.Equal(t, []string{"ua2"}, nodeStmt.Parents)
 
 	s = "create object attribute oa1 in oa2"
 	stmt, err = parseCreateNode(s)
 	require.NoError(t, err)
-	nodeStmt = stmt.(*ngac.CreateNodeStatement)
+	nodeStmt = stmt.(*policy.CreateNodeStatement)
 	require.Equal(t, "oa1", nodeStmt.Name)
-	require.Equal(t, graph.ObjectAttribute, nodeStmt.Kind)
+	require.Equal(t, policy.ObjectAttribute, nodeStmt.Kind)
 	require.Equal(t, []string{"oa2"}, nodeStmt.Parents)
 
 	s = "create object attribute oa1 with properties k1=v1 in oa2"
 	stmt, err = parseCreateNode(s)
 	require.NoError(t, err)
-	nodeStmt = stmt.(*ngac.CreateNodeStatement)
+	nodeStmt = stmt.(*policy.CreateNodeStatement)
 	require.Equal(t, "oa1", nodeStmt.Name)
-	require.Equal(t, graph.ObjectAttribute, nodeStmt.Kind)
+	require.Equal(t, policy.ObjectAttribute, nodeStmt.Kind)
 	require.Equal(t, []string{"oa2"}, nodeStmt.Parents)
 	require.Equal(t, map[string]string{"k1": "v1"}, nodeStmt.Properties)
 
 	s = "create object attribute oa1 with properties k1=v1, k2=v2 in oa2"
 	stmt, err = parseCreateNode(s)
 	require.NoError(t, err)
-	nodeStmt = stmt.(*ngac.CreateNodeStatement)
+	nodeStmt = stmt.(*policy.CreateNodeStatement)
 	require.Equal(t, "oa1", nodeStmt.Name)
-	require.Equal(t, graph.ObjectAttribute, nodeStmt.Kind)
+	require.Equal(t, policy.ObjectAttribute, nodeStmt.Kind)
 	require.Equal(t, []string{"oa2"}, nodeStmt.Parents)
 	require.Equal(t, map[string]string{"k1": "v1", "k2": "v2"}, nodeStmt.Properties)
 }
@@ -93,7 +92,7 @@ func TestParseDeleteNode(t *testing.T) {
 	s := "delete test_node"
 	stmt, err := parseDelete(s)
 	require.NoError(t, err)
-	nodeStmt := stmt.(*ngac.DeleteNodeStatement)
+	nodeStmt := stmt.(*policy.DeleteNodeStatement)
 	require.Equal(t, "test_node", nodeStmt.Name)
 }
 
@@ -101,18 +100,18 @@ func TestParseDeny(t *testing.T) {
 	s := "deny ua1 read, write on !oa1, oa2"
 	stmt, err := parseDeny(s)
 	require.NoError(t, err)
-	denyStmt := stmt.(*ngac.DenyStatement)
+	denyStmt := stmt.(*policy.DenyStatement)
 	require.Equal(t, "ua1", denyStmt.Subject)
-	require.Equal(t, graph.ToOps("read", "write"), denyStmt.Operations)
+	require.Equal(t, policy.ToOps("read", "write"), denyStmt.Operations)
 	require.Equal(t, false, denyStmt.Intersection)
 	require.Equal(t, []string{"!oa1", "oa2"}, denyStmt.Containers)
 
 	s = "deny ua1 read, write on intersection of !oa1, oa2"
 	stmt, err = parseDeny(s)
 	require.NoError(t, err)
-	denyStmt = stmt.(*ngac.DenyStatement)
+	denyStmt = stmt.(*policy.DenyStatement)
 	require.Equal(t, "ua1", denyStmt.Subject)
-	require.Equal(t, graph.ToOps("read", "write"), denyStmt.Operations)
+	require.Equal(t, policy.ToOps("read", "write"), denyStmt.Operations)
 	require.Equal(t, true, denyStmt.Intersection)
 	require.Equal(t, []string{"!oa1", "oa2"}, denyStmt.Containers)
 }
@@ -121,17 +120,17 @@ func TestParseGrant(t *testing.T) {
 	s := "grant ua1 read, write on oa2"
 	stmt, err := parseGrant(s)
 	require.NoError(t, err)
-	grantStmt := stmt.(*ngac.GrantStatement)
+	grantStmt := stmt.(*policy.GrantStatement)
 	require.Equal(t, "ua1", grantStmt.Uattr)
 	require.Equal(t, "oa2", grantStmt.Target)
-	require.Equal(t, graph.ToOps("read", "write"), grantStmt.Operations)
+	require.Equal(t, policy.ToOps("read", "write"), grantStmt.Operations)
 }
 
 func TestParseAssign(t *testing.T) {
 	s := "assign ua1 to ua2, ua3"
 	stmt, err := parseAssign(s)
 	require.NoError(t, err)
-	assignStmt := stmt.(*ngac.AssignStatement)
+	assignStmt := stmt.(*policy.AssignStatement)
 	require.Equal(t, "ua1", assignStmt.Child)
 	require.Equal(t, []string{"ua2", "ua3"}, assignStmt.Parents)
 }
@@ -140,7 +139,7 @@ func TestParseDeassign(t *testing.T) {
 	s := "deassign ua1 FROM ua2, ua3"
 	stmt, err := parseDeassign(s)
 	require.NoError(t, err)
-	deassignStmt := stmt.(*ngac.DeassignStatement)
+	deassignStmt := stmt.(*policy.DeassignStatement)
 	require.Equal(t, "ua1", deassignStmt.Child)
 	require.Equal(t, []string{"ua2", "ua3"}, deassignStmt.Parents)
 }
@@ -188,9 +187,9 @@ create object attribute $x_test in $y;
 	stmts, _, err := Parse(s)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(stmts))
-	require.Equal(t, &ngac.CreateNodeStatement{
+	require.Equal(t, &policy.CreateNodeStatement{
 		Name:       "foo_test",
-		Kind:       graph.ObjectAttribute,
+		Kind:       policy.ObjectAttribute,
 		Properties: make(map[string]string),
 		Parents:    []string{"bar"},
 	}, stmts[0])
@@ -202,9 +201,9 @@ create policy $x_test_policy;
 	stmts, _, err = Parse(s)
 	require.NoError(t, err)
 
-	expected := &ngac.CreateNodeStatement{
+	expected := &policy.CreateNodeStatement{
 		Name:       "foo_test_policy",
-		Kind:       graph.PolicyClass,
+		Kind:       policy.PolicyClass,
 		Properties: map[string]string{},
 		Parents:    []string{},
 	}

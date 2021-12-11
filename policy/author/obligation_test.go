@@ -2,7 +2,7 @@ package author
 
 import (
 	"fmt"
-	"github.com/PM-Master/policy-machine-go/ngac"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -31,8 +31,8 @@ DO(
 	require.NoError(t, err)
 
 	require.Equal(t, "myObl", obligation.Label)
-	require.Equal(t, "ANY_USER", obligation.Event.Subject)
-	require.Equal(t, []ngac.EventOperation{{
+	require.Equal(t, policy.AnyUserSubject, obligation.Event.Subject)
+	require.Equal(t, []policy.EventOperation{{
 		Operation: "op1",
 		Args:      []string{"arg1", "arg2"},
 	}}, obligation.Event.Operations)
@@ -62,8 +62,8 @@ DO(
 	require.NoError(t, err)
 
 	require.Equal(t, "myObl", obligation.Label)
-	require.Equal(t, "ANY_USER", obligation.Event.Subject)
-	require.Equal(t, []ngac.EventOperation{{
+	require.Equal(t, policy.AnyUserSubject, obligation.Event.Subject)
+	require.Equal(t, []policy.EventOperation{{
 		Operation: "op1",
 		Args:      []string{"arg1", "arg2"},
 	}}, obligation.Event.Operations)

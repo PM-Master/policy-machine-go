@@ -1,19 +1,18 @@
 package memory
 
 import (
-	"github.com/PM-Master/policy-machine-go/ngac"
-	"github.com/PM-Master/policy-machine-go/ngac/graph"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestMarshalUnmarshal(t *testing.T) {
 	prohibitions := NewProhibitions()
-	err := prohibitions.Add(ngac.Prohibition{
+	err := prohibitions.Add(policy.Prohibition{
 		Name:         "test",
 		Subject:      "subject1",
 		Containers:   map[string]bool{"cont1": false, "cont2": true},
-		Operations:   graph.ToOps("read", "write"),
+		Operations:   policy.ToOps("read", "write"),
 		Intersection: true,
 	})
 	require.NoError(t, err)
@@ -33,6 +32,6 @@ func TestMarshalUnmarshal(t *testing.T) {
 	prohibition := subjectProhibitions[0]
 	require.Equal(t, "subject1", prohibition.Subject)
 	require.Equal(t, map[string]bool{"cont1": false, "cont2": true}, prohibition.Containers)
-	require.Equal(t, graph.ToOps("read", "write"), prohibition.Operations)
+	require.Equal(t, policy.ToOps("read", "write"), prohibition.Operations)
 	require.True(t, prohibition.Intersection)
 }

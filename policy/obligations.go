@@ -1,32 +1,18 @@
-package ngac
+package policy
 
 import (
 	"encoding/json"
+	"strings"
 )
 
 type (
-	Obligations interface {
-		Add(obligation Obligation) error
-		Remove(label string) error
-		Get(label string) (Obligation, error)
-		All() ([]Obligation, error)
-
-		json.Marshaler
-		json.Unmarshaler
-	}
-
-	Obligation struct {
-		User     string          `json:"user"`
-		Label    string          `json:"label"`
-		Event    EventPattern    `json:"event"`
-		Response ResponsePattern `json:"response"`
-	}
-
 	EventPattern struct {
-		Subject    string           `json:"subject"`
+		Subject    Subject          `json:"subject"`
 		Operations []EventOperation `json:"operations"`
 		Containers []string         `json:"containers"`
 	}
+
+	Subject string
 
 	EventOperation struct {
 		Operation string   `json:"operation"`
@@ -35,6 +21,13 @@ type (
 
 	ResponsePattern struct {
 		Actions []Statement `json:"actions"`
+	}
+
+	Obligation struct {
+		User     string          `json:"user"`
+		Label    string          `json:"label"`
+		Event    EventPattern    `json:"event"`
+		Response ResponsePattern `json:"response"`
 	}
 
 	jsonObligation struct {
@@ -48,6 +41,12 @@ type (
 		Actions []map[string][]byte
 	}
 )
+
+const AnyUserSubject Subject = "ANY_USER"
+
+func (s Subject) Equals(subject string) bool {
+	return strings.ToUpper(string(s)) == strings.ToUpper(subject)
+}
 
 func (o *Obligation) MarshalJSON() ([]byte, error) {
 	actions := make([]map[string][]byte, 0)

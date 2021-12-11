@@ -1,41 +1,40 @@
 package memory
 
 import (
-	"github.com/PM-Master/policy-machine-go/ngac"
-	"github.com/PM-Master/policy-machine-go/ngac/graph"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func TestName(t *testing.T) {
-	o := &ngac.Obligation{
+func TestMarshal(t *testing.T) {
+	o := &policy.Obligation{
 		User:  "test",
 		Label: "test",
-		Event: ngac.EventPattern{
+		Event: policy.EventPattern{
 			Subject:    "ANY_USER",
-			Operations: []ngac.EventOperation{{"test", []string{"arg1"}}},
+			Operations: []policy.EventOperation{{"test", []string{"arg1"}}},
 			Containers: []string{"!oa1", "oa2"},
 		},
-		Response: ngac.ResponsePattern{
-			Actions: []ngac.Statement{
-				&ngac.CreateNodeStatement{
+		Response: policy.ResponsePattern{
+			Actions: []policy.Statement{
+				&policy.CreateNodeStatement{
 					Name:    "testOA",
-					Kind:    graph.ObjectAttribute,
+					Kind:    policy.ObjectAttribute,
 					Parents: []string{"pc1"},
 				},
-				&ngac.CreatePolicyStatement{
+				&policy.CreatePolicyStatement{
 					Name: "testOA",
 				},
-				&ngac.ObligationStatement{Obligation: ngac.Obligation{
+				&policy.ObligationStatement{Obligation: policy.Obligation{
 					User:  "bob",
 					Label: "label",
-					Event: ngac.EventPattern{
+					Event: policy.EventPattern{
 						Subject:    "subject",
-						Operations: []ngac.EventOperation{{Operation: "op"}},
+						Operations: []policy.EventOperation{{Operation: "op"}},
 						Containers: []string{"!oa3"},
 					},
-					Response: ngac.ResponsePattern{
-						Actions: make([]ngac.Statement, 0),
+					Response: policy.ResponsePattern{
+						Actions: make([]policy.Statement, 0),
 					},
 				}},
 			},
@@ -44,7 +43,7 @@ func TestName(t *testing.T) {
 	bytes, err := o.MarshalJSON()
 	require.NoError(t, err)
 
-	o2 := &ngac.Obligation{}
+	o2 := &policy.Obligation{}
 	err = o2.UnmarshalJSON(bytes)
 	require.NoError(t, err)
 	require.Equal(t, o2, o)
@@ -52,19 +51,19 @@ func TestName(t *testing.T) {
 
 func TestJson(t *testing.T) {
 	obligations := NewObligations()
-	err := obligations.Add(ngac.Obligation{
+	err := obligations.Add(policy.Obligation{
 		User:  "test",
 		Label: "test",
-		Event: ngac.EventPattern{
+		Event: policy.EventPattern{
 			Subject:    "ANY_USER",
-			Operations: []ngac.EventOperation{{"test", []string{"arg1"}}},
+			Operations: []policy.EventOperation{{"test", []string{"arg1"}}},
 			Containers: []string{"!oa1", "oa2"},
 		},
-		Response: ngac.ResponsePattern{
-			Actions: []ngac.Statement{
-				&ngac.CreateNodeStatement{
+		Response: policy.ResponsePattern{
+			Actions: []policy.Statement{
+				&policy.CreateNodeStatement{
 					Name:       "testOA",
-					Kind:       graph.ObjectAttribute,
+					Kind:       policy.ObjectAttribute,
 					Properties: nil,
 					Parents:    []string{"pc1"},
 				},

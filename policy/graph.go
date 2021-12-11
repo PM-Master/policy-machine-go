@@ -1,4 +1,4 @@
-package graph
+package policy
 
 import "fmt"
 

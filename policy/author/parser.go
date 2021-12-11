@@ -2,8 +2,7 @@ package author
 
 import (
 	"fmt"
-	"github.com/PM-Master/policy-machine-go/ngac"
-	"github.com/PM-Master/policy-machine-go/ngac/graph"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"strings"
 )
 
@@ -13,7 +12,7 @@ type ParsedFunction struct {
 	Stmts string
 }
 
-func Parse(pal string) ([]ngac.Statement, map[string]ParsedFunction, error) {
+func Parse(pal string) ([]policy.Statement, map[string]ParsedFunction, error) {
 	split := strings.Split(pal, "\n")
 	lines := make([]string, 0)
 	for _, s := range split {
@@ -30,8 +29,8 @@ func Parse(pal string) ([]ngac.Statement, map[string]ParsedFunction, error) {
 	return parseStatements(statements)
 }
 
-func parseStatements(statements []string) ([]ngac.Statement, map[string]ParsedFunction, error) {
-	stmts := make([]ngac.Statement, 0)
+func parseStatements(statements []string) ([]policy.Statement, map[string]ParsedFunction, error) {
+	stmts := make([]policy.Statement, 0)
 	functions := make(map[string]ParsedFunction)
 	vars := make(map[string]string, 0)
 	for _, stmtStr := range statements {
@@ -42,7 +41,7 @@ func parseStatements(statements []string) ([]ngac.Statement, map[string]ParsedFu
 		stmtStr = resolveVars(stmtStr, vars)
 
 		var (
-			stmt ngac.Statement
+			stmt policy.Statement
 			err  error
 		)
 
@@ -58,7 +57,7 @@ func parseStatements(statements []string) ([]ngac.Statement, map[string]ParsedFu
 				return nil, nil, fmt.Errorf("error parsing obligation: %w", err)
 			}
 
-			stmt = &ngac.ObligationStatement{Obligation: o}
+			stmt = &policy.ObligationStatement{Obligation: o}
 		} else if strings.HasPrefix(upperStmtStr, "ASSIGN") {
 			stmt, err = parseAssign(stmtStr)
 		} else if strings.HasPrefix(upperStmtStr, "DEASSIGN") {
@@ -145,7 +144,7 @@ func parseFunc(funcStr string) (ParsedFunction, error) {
 	}, nil
 }
 
-func parseDeny(stmtStr string) (ngac.Statement, error) {
+func parseDeny(stmtStr string) (policy.Statement, error) {
 	fields := strings.Fields(stmtStr)
 	subject := fields[1]
 
@@ -160,7 +159,7 @@ func parseDeny(stmtStr string) (ngac.Statement, error) {
 
 	permStr := strings.Join(fields[2:index], " ")
 	split := strings.Split(permStr, ",")
-	ops := make(graph.Operations, 0)
+	ops := make(policy.Operations, 0)
 	for _, s := range split {
 		ops.Add(strings.TrimSpace(s))
 	}
@@ -186,7 +185,7 @@ func parseDeny(stmtStr string) (ngac.Statement, error) {
 		containers = append(containers, s)
 	}
 
-	return &ngac.DenyStatement{
+	return &policy.DenyStatement{
 		Subject:      subject,
 		Operations:   ops,
 		Intersection: inter,
@@ -195,7 +194,7 @@ func parseDeny(stmtStr string) (ngac.Statement, error) {
 }
 
 //`GRANT <user_Attribute> {<permission>} ON <user_or_object_attribute>;`
-func parseGrant(stmtStr string) (ngac.Statement, error) {
+func parseGrant(stmtStr string) (policy.Statement, error) {
 	fields := strings.Fields(stmtStr)
 	uattr := fields[1]
 
@@ -209,7 +208,7 @@ func parseGrant(stmtStr string) (ngac.Statement, error) {
 
 	permStr := strings.Join(fields[2:index], " ")
 	split := strings.Split(permStr, ",")
-	ops := make(graph.Operations, 0)
+	ops := make(policy.Operations, 0)
 	for _, s := range split {
 		ops.Add(strings.TrimSpace(s))
 	}
@@ -223,23 +222,23 @@ func parseGrant(stmtStr string) (ngac.Statement, error) {
 	fields = strings.Fields(stmtStr)
 	target := fields[1]
 
-	return &ngac.GrantStatement{
+	return &policy.GrantStatement{
 		Uattr:      uattr,
 		Target:     target,
 		Operations: ops,
 	}, nil
 }
 
-func parseDelete(stmtStr string) (ngac.Statement, error) {
+func parseDelete(stmtStr string) (policy.Statement, error) {
 	fields := strings.Fields(stmtStr)
 	target := fields[1]
-	return &ngac.DeleteNodeStatement{
+	return &policy.DeleteNodeStatement{
 		Name: target,
 	}, nil
 }
 
 // `DEASSIGN <child> FROM {<parent>};`
-func parseDeassign(stmtStr string) (ngac.Statement, error) {
+func parseDeassign(stmtStr string) (policy.Statement, error) {
 	fields := strings.Fields(stmtStr)
 	child := fields[1]
 
@@ -252,14 +251,14 @@ func parseDeassign(stmtStr string) (ngac.Statement, error) {
 		parents = append(parents, s)
 	}
 
-	return &ngac.DeassignStatement{
+	return &policy.DeassignStatement{
 		Child:   child,
 		Parents: parents,
 	}, nil
 }
 
 // `ASSIGN <child> TO {<parent>};`
-func parseAssign(stmtStr string) (ngac.Statement, error) {
+func parseAssign(stmtStr string) (policy.Statement, error) {
 	fields := strings.Fields(stmtStr)
 	child := fields[1]
 
@@ -272,13 +271,13 @@ func parseAssign(stmtStr string) (ngac.Statement, error) {
 		parents = append(parents, s)
 	}
 
-	return &ngac.AssignStatement{
+	return &policy.AssignStatement{
 		Child:   child,
 		Parents: parents,
 	}, nil
 }
 
-func parseCreateNode(stmtStr string) (ngac.Statement, error) {
+func parseCreateNode(stmtStr string) (policy.Statement, error) {
 	fields := strings.Fields(stmtStr)
 
 	kindField := fields[1]
@@ -297,24 +296,24 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 		endIndex = 3
 	}
 
-	var kind graph.Kind
+	var kind policy.Kind
 	switch strings.ToUpper(kindField) {
 	case "POLICY":
-		kind = graph.PolicyClass
-		return &ngac.CreateNodeStatement{
+		kind = policy.PolicyClass
+		return &policy.CreateNodeStatement{
 			Name:       name,
 			Kind:       kind,
 			Properties: make(map[string]string),
 			Parents:    make([]string, 0),
 		}, nil
 	case "USER ATTRIBUTE":
-		kind = graph.UserAttribute
+		kind = policy.UserAttribute
 	case "OBJECT ATTRIBUTE":
-		kind = graph.ObjectAttribute
+		kind = policy.ObjectAttribute
 	case "OBJECT":
-		kind = graph.Object
+		kind = policy.Object
 	case "USER":
-		kind = graph.User
+		kind = policy.User
 	}
 
 	stmtStr = strings.Join(fields[endIndex:], " ")
@@ -359,7 +358,7 @@ func parseCreateNode(stmtStr string) (ngac.Statement, error) {
 		parents = append(parents, s)
 	}
 
-	return &ngac.CreateNodeStatement{
+	return &policy.CreateNodeStatement{
 		Name:       name,
 		Kind:       kind,
 		Properties: properties,
