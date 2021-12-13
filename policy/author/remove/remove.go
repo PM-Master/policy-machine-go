@@ -1,4 +1,4 @@
-package DeleteNodeStatement
+package remove
 
 import "github.com/PM-Master/policy-machine-go/policy"
 
