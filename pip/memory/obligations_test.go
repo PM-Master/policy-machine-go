@@ -7,7 +7,7 @@ import (
 )
 
 func TestMarshal(t *testing.T) {
-	o := &policy.Obligation{
+	o := policy.Obligation{
 		User:  "test",
 		Label: "test",
 		Event: policy.EventPattern{
@@ -17,15 +17,15 @@ func TestMarshal(t *testing.T) {
 		},
 		Response: policy.ResponsePattern{
 			Actions: []policy.Statement{
-				&policy.CreateNodeStatement{
+				policy.CreateNodeStatement{
 					Name:    "testOA",
 					Kind:    policy.ObjectAttribute,
 					Parents: []string{"pc1"},
 				},
-				&policy.CreatePolicyStatement{
+				policy.CreatePolicyStatement{
 					Name: "testOA",
 				},
-				&policy.ObligationStatement{Obligation: policy.Obligation{
+				policy.ObligationStatement{Obligation: policy.Obligation{
 					User:  "bob",
 					Label: "label",
 					Event: policy.EventPattern{
@@ -43,7 +43,7 @@ func TestMarshal(t *testing.T) {
 	bytes, err := o.MarshalJSON()
 	require.NoError(t, err)
 
-	o2 := &policy.Obligation{}
+	o2 := policy.Obligation{}
 	err = o2.UnmarshalJSON(bytes)
 	require.NoError(t, err)
 	require.Equal(t, o2, o)
@@ -61,7 +61,7 @@ func TestJson(t *testing.T) {
 		},
 		Response: policy.ResponsePattern{
 			Actions: []policy.Statement{
-				&policy.CreateNodeStatement{
+				policy.CreateNodeStatement{
 					Name:       "testOA",
 					Kind:       policy.ObjectAttribute,
 					Properties: nil,

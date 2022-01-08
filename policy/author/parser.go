@@ -57,7 +57,7 @@ func parseStatements(statements []string) ([]policy.Statement, map[string]Parsed
 				return nil, nil, fmt.Errorf("error parsing obligation: %w", err)
 			}
 
-			stmt = &policy.ObligationStatement{Obligation: o}
+			stmt = policy.ObligationStatement{Obligation: o}
 		} else if strings.HasPrefix(upperStmtStr, "ASSIGN") {
 			stmt, err = parseAssign(stmtStr)
 		} else if strings.HasPrefix(upperStmtStr, "DEASSIGN") {
@@ -185,7 +185,7 @@ func parseDeny(stmtStr string) (policy.Statement, error) {
 		containers = append(containers, s)
 	}
 
-	return &policy.DenyStatement{
+	return policy.DenyStatement{
 		Subject:      subject,
 		Operations:   ops,
 		Intersection: inter,
@@ -222,7 +222,7 @@ func parseGrant(stmtStr string) (policy.Statement, error) {
 	fields = strings.Fields(stmtStr)
 	target := fields[1]
 
-	return &policy.GrantStatement{
+	return policy.GrantStatement{
 		Uattr:      uattr,
 		Target:     target,
 		Operations: ops,
@@ -232,7 +232,7 @@ func parseGrant(stmtStr string) (policy.Statement, error) {
 func parseDelete(stmtStr string) (policy.Statement, error) {
 	fields := strings.Fields(stmtStr)
 	target := fields[1]
-	return &policy.DeleteNodeStatement{
+	return policy.DeleteNodeStatement{
 		Name: target,
 	}, nil
 }
@@ -251,7 +251,7 @@ func parseDeassign(stmtStr string) (policy.Statement, error) {
 		parents = append(parents, s)
 	}
 
-	return &policy.DeassignStatement{
+	return policy.DeassignStatement{
 		Child:   child,
 		Parents: parents,
 	}, nil
@@ -271,7 +271,7 @@ func parseAssign(stmtStr string) (policy.Statement, error) {
 		parents = append(parents, s)
 	}
 
-	return &policy.AssignStatement{
+	return policy.AssignStatement{
 		Child:   child,
 		Parents: parents,
 	}, nil
@@ -300,7 +300,7 @@ func parseCreateNode(stmtStr string) (policy.Statement, error) {
 	switch strings.ToUpper(kindField) {
 	case "POLICY":
 		kind = policy.PolicyClass
-		return &policy.CreateNodeStatement{
+		return policy.CreateNodeStatement{
 			Name:       name,
 			Kind:       kind,
 			Properties: make(map[string]string),
@@ -358,7 +358,7 @@ func parseCreateNode(stmtStr string) (policy.Statement, error) {
 		parents = append(parents, s)
 	}
 
-	return &policy.CreateNodeStatement{
+	return policy.CreateNodeStatement{
 		Name:       name,
 		Kind:       kind,
 		Properties: properties,

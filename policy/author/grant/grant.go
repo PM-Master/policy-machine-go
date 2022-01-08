@@ -26,8 +26,8 @@ func (p *perms) Permissions(perms ...string) *target {
 	}
 }
 
-func (t *target) On(target string) *policy.GrantStatement {
-	return &policy.GrantStatement{
+func (t *target) On(target string) policy.GrantStatement {
+	return policy.GrantStatement{
 		Uattr:      t.ua,
 		Target:     target,
 		Operations: policy.ToOps(t.permissions...),

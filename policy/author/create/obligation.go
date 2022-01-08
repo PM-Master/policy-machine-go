@@ -54,8 +54,8 @@ func (o *onDo) On(containers []string) *onDo {
 	}
 }
 
-func (o *onDo) Do(stmts ...policy.Statement) *policy.ObligationStatement {
-	return &policy.ObligationStatement{
+func (o *onDo) Do(stmts ...policy.Statement) policy.ObligationStatement {
+	return policy.ObligationStatement{
 		Obligation: policy.Obligation{
 			User:  "",
 			Label: o.label,

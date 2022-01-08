@@ -23,9 +23,9 @@ func Object(name string) *assign {
 	return &assign{child: name}
 }
 
-func (a *assign) To(parent string, parents ...string) *policy.AssignStatement {
+func (a *assign) To(parent string, parents ...string) policy.AssignStatement {
 	parents = append(parents, parent)
-	return &policy.AssignStatement{
+	return policy.AssignStatement{
 		Child:   a.child,
 		Parents: parents,
 	}

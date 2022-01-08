@@ -10,9 +10,9 @@ type create struct {
 	properties map[string]string
 }
 
-func (c *create) In(parent string, parents ...string) *policy.CreateNodeStatement {
+func (c *create) In(parent string, parents ...string) policy.CreateNodeStatement {
 	parents = append(parents, parent)
-	return &policy.CreateNodeStatement{
+	return policy.CreateNodeStatement{
 		Name:       c.name,
 		Kind:       c.kind,
 		Properties: c.properties,
@@ -63,8 +63,8 @@ func Object(name string) *create {
 	}
 }
 
-func PolicyClass(name string) *policy.CreatePolicyStatement {
-	return &policy.CreatePolicyStatement{
+func PolicyClass(name string) policy.CreatePolicyStatement {
+	return policy.CreatePolicyStatement{
 		Name: name,
 	}
 }

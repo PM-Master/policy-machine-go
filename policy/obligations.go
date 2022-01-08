@@ -53,25 +53,25 @@ func (o *Obligation) MarshalJSON() ([]byte, error) {
 	for _, action := range o.Response.Actions {
 		var actionName string
 		switch action.(type) {
-		case *CreatePolicyStatement:
+		case CreatePolicyStatement:
 			actionName = "CreatePolicyStatement"
-		case *CreateNodeStatement:
+		case CreateNodeStatement:
 			actionName = "CreateNodeStatement"
-		case *AssignStatement:
+		case AssignStatement:
 			actionName = "AssignStatement"
-		case *DeassignStatement:
+		case DeassignStatement:
 			actionName = "DeassignStatement"
-		case *DeleteNodeStatement:
+		case DeleteNodeStatement:
 			actionName = "DeleteNodeStatement"
-		case *GrantStatement:
+		case GrantStatement:
 			actionName = "GrantStatement"
-		case *DenyStatement:
+		case DenyStatement:
 			actionName = "DenyStatement"
-		case *ObligationStatement:
+		case ObligationStatement:
 			actionName = "ObligationStatement"
 		}
 
-		bytes, err := json.Marshal(action)
+		bytes, err := json.Marshal(&action)
 		if err != nil {
 			return nil, err
 		}
@@ -105,28 +105,28 @@ func (o *Obligation) UnmarshalJSON(bytes []byte) error {
 				if err != nil {
 					return err
 				}
-				actions = append(actions, &action)
+				actions = append(actions, action)
 			case "CreateNodeStatement":
 				action := CreateNodeStatement{}
 				err = json.Unmarshal(actionBytes, &action)
 				if err != nil {
 					return err
 				}
-				actions = append(actions, &action)
+				actions = append(actions, action)
 			case "AssignStatement":
 				action := AssignStatement{}
 				err = json.Unmarshal(actionBytes, &action)
 				if err != nil {
 					return err
 				}
-				actions = append(actions, &action)
+				actions = append(actions, action)
 			case "DeassignStatement":
 				action := DeassignStatement{}
 				err = json.Unmarshal(actionBytes, &action)
 				if err != nil {
 					return err
 				}
-				actions = append(actions, &action)
+				actions = append(actions, action)
 			case "DeleteNodeStatement":
 				action := DeleteNodeStatement{}
 				err = json.Unmarshal(actionBytes, &action)
@@ -140,21 +140,21 @@ func (o *Obligation) UnmarshalJSON(bytes []byte) error {
 				if err != nil {
 					return err
 				}
-				actions = append(actions, &action)
+				actions = append(actions, action)
 			case "DenyStatement":
 				action := DenyStatement{}
 				err = json.Unmarshal(actionBytes, &action)
 				if err != nil {
 					return err
 				}
-				actions = append(actions, &action)
+				actions = append(actions, action)
 			case "ObligationStatement":
 				action := ObligationStatement{}
 				err = json.Unmarshal(actionBytes, &action)
 				if err != nil {
 					return err
 				}
-				actions = append(actions, &action)
+				actions = append(actions, action)
 			}
 		}
 	}

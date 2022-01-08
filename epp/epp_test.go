@@ -1,6 +1,8 @@
 package epp
 
 import (
+	"fmt"
+	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -43,9 +45,9 @@ func TestResolveArgs(t *testing.T) {
 			Name: "<arg1>",
 		}
 
-		resolved, err := resolveArgs(&stmt, args)
+		resolved, err := resolveArgs(stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(*policy.CreatePolicyStatement)
+		actual := resolved.(policy.CreatePolicyStatement)
 		require.Equal(t, "test1", actual.Name)
 	})
 
@@ -57,9 +59,9 @@ func TestResolveArgs(t *testing.T) {
 			Parents:    []string{"<arg1>", "<arg4>"},
 		}
 
-		resolved, err := resolveArgs(&stmt, args)
+		resolved, err := resolveArgs(stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(*policy.CreateNodeStatement)
+		actual := resolved.(policy.CreateNodeStatement)
 		require.Equal(t, "test2", actual.Name)
 		require.Equal(t, "test3", actual.Properties["k"])
 		require.Equal(t, []string{"test1", "test4"}, actual.Parents)
@@ -71,9 +73,9 @@ func TestResolveArgs(t *testing.T) {
 			Parents: []string{"<arg2>", "<arg4>"},
 		}
 
-		resolved, err := resolveArgs(&stmt, args)
+		resolved, err := resolveArgs(stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(*policy.AssignStatement)
+		actual := resolved.(policy.AssignStatement)
 		require.Equal(t, "test1", actual.Child)
 		require.Equal(t, []string{"test2", "test4"}, actual.Parents)
 	})
@@ -84,9 +86,9 @@ func TestResolveArgs(t *testing.T) {
 			Parents: []string{"<arg2>", "<arg4>"},
 		}
 
-		resolved, err := resolveArgs(&stmt, args)
+		resolved, err := resolveArgs(stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(*policy.DeassignStatement)
+		actual := resolved.(policy.DeassignStatement)
 		require.Equal(t, "test1", actual.Child)
 		require.Equal(t, []string{"test2", "test4"}, actual.Parents)
 	})
@@ -96,9 +98,9 @@ func TestResolveArgs(t *testing.T) {
 			Name: "<arg1>",
 		}
 
-		resolved, err := resolveArgs(&stmt, args)
+		resolved, err := resolveArgs(stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(*policy.DeleteNodeStatement)
+		actual := resolved.(policy.DeleteNodeStatement)
 		require.Equal(t, "test1", actual.Name)
 	})
 
@@ -108,9 +110,9 @@ func TestResolveArgs(t *testing.T) {
 			Target: "<arg2>",
 		}
 
-		resolved, err := resolveArgs(&stmt, args)
+		resolved, err := resolveArgs(stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(*policy.GrantStatement)
+		actual := resolved.(policy.GrantStatement)
 		require.Equal(t, "test1", actual.Uattr)
 		require.Equal(t, "test2", actual.Target)
 	})
@@ -123,9 +125,9 @@ func TestResolveArgs(t *testing.T) {
 			Containers:   []string{"!<arg2>", "<arg3>"},
 		}
 
-		resolved, err := resolveArgs(&stmt, args)
+		resolved, err := resolveArgs(stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(*policy.DenyStatement)
+		actual := resolved.(policy.DenyStatement)
 		require.Equal(t, "test1", actual.Subject)
 		require.Equal(t, []string{"!test2", "test3"}, actual.Containers)
 	})
@@ -142,7 +144,7 @@ func TestResolveArgs(t *testing.T) {
 				},
 				Response: policy.ResponsePattern{
 					Actions: []policy.Statement{
-						&policy.CreateNodeStatement{
+						policy.CreateNodeStatement{
 							Name:       "<arg2>",
 							Kind:       policy.UserAttribute,
 							Properties: map[string]string{"k": "<arg3>"},
@@ -153,14 +155,72 @@ func TestResolveArgs(t *testing.T) {
 			},
 		}
 
-		resolved, err := resolveArgs(&stmt, args)
+		resolved, err := resolveArgs(stmt, args)
 		require.NoError(t, err)
-		actual := resolved.(*policy.ObligationStatement)
+		actual := resolved.(policy.ObligationStatement)
 		require.Equal(t, "myObl_test1", actual.Obligation.Label)
 
-		createNodeStmt := actual.Obligation.Response.Actions[0].(*policy.CreateNodeStatement)
+		createNodeStmt := actual.Obligation.Response.Actions[0].(policy.CreateNodeStatement)
 		require.Equal(t, "test2", createNodeStmt.Name)
 		require.Equal(t, "test3", createNodeStmt.Properties["k"])
 		require.Equal(t, []string{"test1", "test4"}, createNodeStmt.Parents)
 	})
+}
+
+func TestSameEventTwice(t *testing.T) {
+	policyStore := memory.NewPolicyStore()
+
+	err := policyStore.Graph().CreatePolicyClass("pc1")
+	require.NoError(t, err)
+
+	obligation := policy.Obligation{
+		User:  "",
+		Label: "test_obl",
+		Event: policy.EventPattern{
+			Subject:    policy.AnyUserSubject,
+			Operations: []policy.EventOperation{{Operation: "test_event", Args: []string{"test_arg"}}},
+		},
+		Response: policy.ResponsePattern{
+			Actions: []policy.Statement{
+				policy.CreateNodeStatement{
+					Name:       "<test_arg>",
+					Kind:       policy.ObjectAttribute,
+					Properties: nil,
+					Parents:    []string{"pc1"},
+				},
+			},
+		},
+	}
+
+	err = policyStore.Obligations().Add(obligation)
+	require.NoError(t, err)
+
+	epp := NewEPP(policyStore)
+	err = epp.ProcessEvent(EventContext{
+		User:   "",
+		Event:  "test_event",
+		Target: "",
+		Args:   map[string]string{"test_arg": "foo"},
+	})
+	require.NoError(t, err)
+	err = epp.ProcessEvent(EventContext{
+		User:   "",
+		Event:  "test_event",
+		Target: "",
+		Args:   map[string]string{"test_arg": "bar"},
+	})
+	require.NoError(t, err)
+
+	nodes, err := policyStore.Graph().GetNodes()
+	require.NoError(t, err)
+	require.Equal(t, 3, len(nodes))
+}
+
+func TestName(t *testing.T) {
+	c := policy.CreateNodeStatement{}
+
+	func(statement policy.Statement) {
+		_, ok := statement.(policy.CreateNodeStatement)
+		fmt.Println(ok)
+	}(c)
 }

@@ -23,9 +23,9 @@ func Object(name string) *deassign {
 	return &deassign{child: name}
 }
 
-func (a *deassign) From(parent string, parents ...string) *policy.DeassignStatement {
+func (a *deassign) From(parent string, parents ...string) policy.DeassignStatement {
 	parents = append(parents, parent)
-	return &policy.DeassignStatement{
+	return policy.DeassignStatement{
 		Child:   a.child,
 		Parents: parents,
 	}

@@ -1,7 +1,6 @@
 package policy
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -9,9 +8,6 @@ import (
 type (
 	Statement interface {
 		Apply(store Store) error
-
-		json.Marshaler
-		json.Unmarshaler
 	}
 
 	CreatePolicyStatement struct {
@@ -99,7 +95,7 @@ type (
 	}
 )
 
-func (c *CreatePolicyStatement) Apply(store Store) error {
+func (c CreatePolicyStatement) Apply(store Store) error {
 	err := store.Graph().CreatePolicyClass(c.Name)
 	if err != nil {
 		return err
@@ -108,24 +104,7 @@ func (c *CreatePolicyStatement) Apply(store Store) error {
 	return nil
 }
 
-func (c *CreatePolicyStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&jsonCreatePolicyStatement{
-		Name: c.Name,
-	})
-}
-
-func (c *CreatePolicyStatement) UnmarshalJSON(bytes []byte) error {
-	j := &jsonCreatePolicyStatement{}
-	if err := json.Unmarshal(bytes, j); err != nil {
-		return err
-	}
-
-	c.Name = j.Name
-
-	return nil
-}
-
-func (c *CreateNodeStatement) Apply(store Store) error {
+func (c CreateNodeStatement) Apply(store Store) error {
 	var err error
 
 	if c.Kind == PolicyClass {
@@ -137,49 +116,11 @@ func (c *CreateNodeStatement) Apply(store Store) error {
 	return err
 }
 
-func (c *CreateNodeStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&jsonCreateNodeStatement{
-		Name:       c.Name,
-		Kind:       c.Kind,
-		Properties: c.Properties,
-		Parents:    c.Parents,
-	})
-}
-
-func (c *CreateNodeStatement) UnmarshalJSON(bytes []byte) error {
-	j := &jsonCreateNodeStatement{}
-	if err := json.Unmarshal(bytes, j); err != nil {
-		return err
-	}
-
-	c.Name = j.Name
-	c.Kind = j.Kind
-	c.Properties = j.Properties
-	c.Parents = j.Parents
-
-	return nil
-}
-
-func (d *DeleteNodeStatement) Apply(store Store) error {
+func (d DeleteNodeStatement) Apply(store Store) error {
 	return store.Graph().DeleteNode(d.Name)
 }
 
-func (d *DeleteNodeStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&jsonDeleteNodeStatement{Name: d.Name})
-}
-
-func (d *DeleteNodeStatement) UnmarshalJSON(bytes []byte) error {
-	j := &jsonDeleteNodeStatement{}
-	if err := json.Unmarshal(bytes, j); err != nil {
-		return err
-	}
-
-	d.Name = j.Name
-
-	return nil
-}
-
-func (a *AssignStatement) Apply(store Store) error {
+func (a AssignStatement) Apply(store Store) error {
 	for _, parent := range a.Parents {
 		if err := store.Graph().Assign(a.Child, parent); err != nil {
 			return fmt.Errorf("error assigning %s to %s", a.Child, parent)
@@ -189,26 +130,7 @@ func (a *AssignStatement) Apply(store Store) error {
 	return nil
 }
 
-func (a *AssignStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&jsonAssignStatement{
-		Child:   a.Child,
-		Parents: a.Parents,
-	})
-}
-
-func (a *AssignStatement) UnmarshalJSON(bytes []byte) error {
-	j := &jsonAssignStatement{}
-	if err := json.Unmarshal(bytes, j); err != nil {
-		return err
-	}
-
-	a.Child = j.Child
-	a.Parents = j.Parents
-
-	return nil
-}
-
-func (d *DeassignStatement) Apply(store Store) error {
+func (d DeassignStatement) Apply(store Store) error {
 	for _, parent := range d.Parents {
 		if err := store.Graph().Deassign(d.Child, parent); err != nil {
 			return fmt.Errorf("error deassigning %s from %s", d.Child, parent)
@@ -218,51 +140,11 @@ func (d *DeassignStatement) Apply(store Store) error {
 	return nil
 }
 
-func (d *DeassignStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&jsonDeassignStatement{
-		Child:   d.Child,
-		Parents: d.Parents,
-	})
-}
-
-func (d *DeassignStatement) UnmarshalJSON(bytes []byte) error {
-	j := &jsonDeassignStatement{}
-	if err := json.Unmarshal(bytes, j); err != nil {
-		return err
-	}
-
-	d.Child = j.Child
-	d.Parents = j.Parents
-
-	return nil
-}
-
-func (g *GrantStatement) Apply(store Store) error {
+func (g GrantStatement) Apply(store Store) error {
 	return store.Graph().Associate(g.Uattr, g.Target, g.Operations)
 }
 
-func (g *GrantStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&jsonGrantStatement{
-		Uattr:      g.Uattr,
-		Target:     g.Target,
-		Operations: g.Operations,
-	})
-}
-
-func (g *GrantStatement) UnmarshalJSON(bytes []byte) error {
-	j := &jsonGrantStatement{}
-	if err := json.Unmarshal(bytes, j); err != nil {
-		return err
-	}
-
-	g.Uattr = j.Uattr
-	g.Target = j.Target
-	g.Operations = j.Operations
-
-	return nil
-}
-
-func (d *DenyStatement) Apply(store Store) error {
+func (d DenyStatement) Apply(store Store) error {
 	containers := make(map[string]bool)
 	for _, containerName := range d.Containers {
 		complement := strings.HasPrefix(containerName, "!")
@@ -284,46 +166,6 @@ func (d *DenyStatement) Apply(store Store) error {
 	return store.Prohibitions().Add(prohibition)
 }
 
-func (d *DenyStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&jsonDenyStatement{
-		Subject:      d.Subject,
-		Operations:   d.Operations,
-		Intersection: d.Intersection,
-		Containers:   d.Containers,
-	})
-}
-
-func (d *DenyStatement) UnmarshalJSON(bytes []byte) error {
-	j := &jsonDenyStatement{}
-	if err := json.Unmarshal(bytes, j); err != nil {
-		return err
-	}
-
-	d.Subject = j.Subject
-	d.Operations = j.Operations
-	d.Intersection = j.Intersection
-	d.Containers = j.Containers
-
-	return nil
-}
-
-func (o *ObligationStatement) Apply(store Store) error {
+func (o ObligationStatement) Apply(store Store) error {
 	return store.Obligations().Add(o.Obligation)
-}
-
-func (o *ObligationStatement) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&jsonObligationStatement{
-		Obligation: o.Obligation,
-	})
-}
-
-func (o *ObligationStatement) UnmarshalJSON(bytes []byte) error {
-	j := &jsonObligationStatement{}
-	if err := json.Unmarshal(bytes, j); err != nil {
-		return err
-	}
-
-	o.Obligation = j.Obligation
-
-	return nil
 }

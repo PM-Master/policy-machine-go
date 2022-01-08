@@ -53,8 +53,8 @@ func (c *conts) IntersectionOf() *conts {
 	}
 }
 
-func (c *conts) Containers(containers ...string) *policy.DenyStatement {
-	return &policy.DenyStatement{
+func (c *conts) Containers(containers ...string) policy.DenyStatement {
+	return policy.DenyStatement{
 		Subject:      c.subject,
 		Operations:   policy.ToOps(c.operations...),
 		Intersection: c.intersection,
