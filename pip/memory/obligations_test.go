@@ -78,4 +78,9 @@ func TestJson(t *testing.T) {
 	obligations = NewObligations()
 	err = obligations.UnmarshalJSON(bytes)
 	require.NoError(t, err)
+
+	bytes2, err := obligations.MarshalJSON()
+	require.NoError(t, err)
+
+	require.Equal(t, bytes, bytes2)
 }
