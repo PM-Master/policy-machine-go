@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/policy"
+	"sort"
 )
 
 type (
@@ -285,51 +286,161 @@ func (g *memgraph) GetAssociations() (map[string]map[string]policy.Operations, e
 	return assocs, nil
 }
 
-type jsonGraph struct {
-	Nodes        map[string]policy.Node                  `json:"nodes"`
-	Assignments  map[string]map[string]bool              `json:"assignments"`
-	Associations map[string]map[string]policy.Operations `json:"associations"`
-}
+type (
+	jsonGraph struct {
+		Nodes        []policy.Node            `json:"nodes"`
+		Assignments  []policy.AssignStatement `json:"assignments"`
+		Associations []jsonAssociations       `json:"associations"`
+	}
+
+	jsonAssociations struct {
+		Uattr   string
+		Targets []jsonAssociationTarget
+	}
+
+	jsonAssociationTarget struct {
+		Target string            `json:"target"`
+		Ops    policy.Operations `json:"ops"`
+	}
+)
 
 func (g *memgraph) MarshalJSON() ([]byte, error) {
-	var err error
+	nodes, err := g.GetNodes()
+	if err != nil {
+		return nil, err
+	}
+
+	assignments, err := g.GetAssignments()
+	if err != nil {
+		return nil, err
+	}
+
+	associations, err := g.GetAssociations()
+	if err != nil {
+		return nil, err
+	}
+
 	jg := jsonGraph{
-		Nodes:        make(map[string]policy.Node),
-		Assignments:  make(map[string]map[string]bool),
-		Associations: make(map[string]map[string]policy.Operations),
-	}
-
-	if jg.Nodes, err = g.GetNodes(); err != nil {
-		return nil, err
-	}
-
-	if jg.Assignments, err = g.GetAssignments(); err != nil {
-		return nil, err
-	}
-
-	if jg.Associations, err = g.GetAssociations(); err != nil {
-		return nil, err
+		Nodes:        makeNodesDeterministic(nodes),
+		Assignments:  makeAssignmentsDeterministic(assignments),
+		Associations: makeAssociationsDeterministic(associations),
 	}
 
 	return json.Marshal(jg)
+}
+
+func makeNodesDeterministic(nodes map[string]policy.Node) []policy.Node {
+	keys := make([]string, 0)
+	for k := range nodes {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	nodeArr := make([]policy.Node, 0)
+	for _, k := range keys {
+		nodeArr = append(nodeArr, nodes[k])
+	}
+
+	return nodeArr
+}
+
+func makeAssignmentsDeterministic(assignments map[string]map[string]bool) []policy.AssignStatement {
+	keys := make([]string, 0)
+	for k := range assignments {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	assignmentArr := make([]policy.AssignStatement, 0)
+	for _, k := range keys {
+		parentsMap := assignments[k]
+		parentsArr := make([]string, 0)
+		for p := range parentsMap {
+			parentsArr = append(parentsArr, p)
+		}
+
+		sort.Strings(parentsArr)
+
+		assignmentArr = append(assignmentArr, policy.AssignStatement{
+			Child:   k,
+			Parents: parentsArr,
+		})
+	}
+
+	return assignmentArr
+}
+
+func makeAssociationsDeterministic(associations map[string]map[string]policy.Operations) []jsonAssociations {
+	keys := make([]string, 0)
+	for k := range associations {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	assocArr := make([]jsonAssociations, 0)
+	for _, k := range keys {
+		targetsOpsMap := associations[k]
+		targetArr := make([]string, 0)
+		for target := range targetsOpsMap {
+			targetArr = append(targetArr, target)
+		}
+
+		sort.Strings(targetArr)
+
+		jsonAssocitionArr := make([]jsonAssociationTarget, 0)
+		for _, target := range targetArr {
+			jsonAssocitionArr = append(jsonAssocitionArr, jsonAssociationTarget{
+				Target: target,
+				Ops:    targetsOpsMap[target],
+			})
+		}
+
+		assocArr = append(assocArr, jsonAssociations{
+			Uattr:   k,
+			Targets: jsonAssocitionArr,
+		})
+	}
+
+	return assocArr
 }
 
 // UnmarshalJSON into a graph.
 // This will erase any nodes/assignments/associations that currently exist in the graph.
 func (g *memgraph) UnmarshalJSON(bytes []byte) error {
 	jg := jsonGraph{
-		Nodes:        make(map[string]policy.Node),
-		Assignments:  make(map[string]map[string]bool),
-		Associations: make(map[string]map[string]policy.Operations),
+		Nodes:        make([]policy.Node, 0),
+		Assignments:  make([]policy.AssignStatement, 0),
+		Associations: make([]jsonAssociations, 0),
 	}
 
 	if err := json.Unmarshal(bytes, &jg); err != nil {
 		return err
 	}
 
-	g.nodes = jg.Nodes
-	g.assignments = jg.Assignments
-	g.associations = jg.Associations
+	for _, node := range jg.Nodes {
+		g.nodes[node.Name] = node
+	}
+
+	for _, assignment := range jg.Assignments {
+		parentsMap := make(map[string]bool)
+		for _, parent := range assignment.Parents {
+			parentsMap[parent] = true
+		}
+
+		g.assignments[assignment.Child] = parentsMap
+	}
+
+	for _, assoc := range jg.Associations {
+		targetOpsMap := make(map[string]policy.Operations)
+		for _, assocTarget := range assoc.Targets {
+			targetOpsMap[assocTarget.Target] = assocTarget.Ops
+		}
+
+		g.associations[assoc.Uattr] = targetOpsMap
+	}
 
 	return nil
 }

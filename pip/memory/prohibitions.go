@@ -3,6 +3,7 @@ package memory
 import (
 	"encoding/json"
 	"github.com/PM-Master/policy-machine-go/policy"
+	"sort"
 )
 
 type prohibitions struct {
@@ -59,7 +60,16 @@ func (p *prohibitions) MarshalJSON() ([]byte, error) {
 		Prohibitions: make([]policy.Prohibition, 0),
 	}
 
-	for _, subjectProhibitions := range p.prohibitions {
+	keys := make([]string, 0)
+	for k := range p.prohibitions {
+		keys = append(keys, k)
+	}
+
+	// sort keys so json is deterministic
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		subjectProhibitions := p.prohibitions[k]
 		for _, prohibition := range subjectProhibitions {
 			jp.Prohibitions = append(jp.Prohibitions, prohibition)
 		}

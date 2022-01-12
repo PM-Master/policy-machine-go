@@ -2,6 +2,7 @@ package memory
 
 import (
 	"github.com/PM-Master/policy-machine-go/policy"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -17,6 +18,8 @@ func TestJSON(t *testing.T) {
 	b, _ := g.MarshalJSON()
 	g1 := NewGraph()
 	g1.UnmarshalJSON(b)
+	b1, _ := g1.MarshalJSON()
+	require.Equal(t, b, b1)
 
 	if ok, _ := g1.Exists("pc1"); !ok {
 		t.Fatal("pc1 should exist but does not")
